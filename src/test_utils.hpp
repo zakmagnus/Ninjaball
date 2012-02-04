@@ -1,0 +1,37 @@
+#ifndef NB_TEST_UTILS_H
+#define NB_TEST_UTILS_H
+
+#include "SDL/SDL.h"
+#include "SDL/SDL_image.h"
+#include "physics.hpp"
+#include "vector.hpp"
+#include "Moveable.hpp"
+#include "rope.hpp"
+#include "ball.hpp"
+#include "rect.hpp"
+
+struct moveable_data {
+	Moveable *m;
+	real_t old_x, old_y;
+	bool collided;
+};
+
+#define NB_HOOK_SPD (100.0)
+#define NB_ROPE_MAX_LEN (600)
+
+class hook : public rect {
+	public:
+		hook() : rect(0, 0, 1, 1) {};
+		void init(vector2d_t& dir);
+		real_t d;
+		vector2d_t dir;
+		bool advance(Moveable *m, real_t dt);
+};
+
+SDL_Surface *load_img (char *filename);
+void apply_surface (SDL_Surface *src, SDL_Surface *dst, int x, int y,
+		SDL_Rect *clip);
+void render_rope(SDL_Surface *srf, ropedata& rope, SDL_Rect *camera);
+void render_pointer(SDL_Surface *srf, ball *b, vector2d_t& dir, SDL_Rect *camera);
+vector2d_t angle_to_dir(real_t angle);
+#endif

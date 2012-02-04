@@ -1,0 +1,17 @@
+refactor:
+-figure out how to use _t naming correctly
+-rename Moveable holy shit
+-figure out refs vs. pointers, for ex. physics_t
+-add more overloads to vectors (left side *?)
+-use this-> consistently
+
+build:
+-make makefile reflect actual dependencies
+-add more warnings/errors!
+
+physics:
+-more solids? surfaces?
+
+bugs:
+-sometimes things can get "inside" each other via weird collisions
+-hook can fly through objects because it advances too quickly
