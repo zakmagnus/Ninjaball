@@ -34,4 +34,13 @@ void apply_surface (SDL_Surface *src, SDL_Surface *dst, int x, int y,
 void render_rope(SDL_Surface *srf, ropedata& rope, SDL_Rect *camera);
 void render_pointer(SDL_Surface *srf, ball *b, vector2d_t& dir, SDL_Rect *camera);
 vector2d_t angle_to_dir(real_t angle);
+
+/* mathy stuff */
+#define min(a,b) ((a)<(b)? (a) : (b))
+#define max(a,b) ((a)>(b)? (a) : (b))
+#define SINGLE_DIM_OVERLAP(v1min,v1max,v2min,v2max) \
+	(max((v1max), (v2max)) - min((v1min), (v2min))\
+	 - fabs((v1max) - (v2max))\
+	 - fabs((v1min) - (v2min)))
+
 #endif

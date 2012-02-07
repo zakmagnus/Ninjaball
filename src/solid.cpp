@@ -1,5 +1,6 @@
 #include <math.h>
 #include "solid.hpp"
+#include "test_utils.hpp"
 
 collision_function coll_funcs[NB_NUM_COLL_FUNCS];
 
@@ -34,9 +35,6 @@ real_t solid::top_edge(void) {
 	return this->y;
 }
 
-//TODO shove somewhere better
-#define min(a,b) ((a)<(b)? (a) : (b))
-#define max(a,b) ((a)>(b)? (a) : (b))
 #include <stdio.h>
 /* rectangle intersection */
 bool rect_rect_coll (solid& s1, solid& s2, vector2d_t *dir) {
@@ -59,12 +57,19 @@ bool rect_rect_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	if (dir) {
 		/* edge contact heuristic: the dimension with a greater overlap
 		 * is the one where the collision "really" happens */
+		/*
 		real_t xmin = min(left1, left2);
 		real_t xmax = max(right1, right2);
 		real_t x_overlap = xmax - xmin - fabs(left1 - left2) - fabs(right1 - right2);
+		*/
+		real_t x_overlap = SINGLE_DIM_OVERLAP(left1, right1,
+				left2, right2);
+		/*
 		real_t ymin = min(top1, top2);
 		real_t ymax = max(bot1, bot2);
 		real_t y_overlap = ymax - ymin - fabs(top1 - top2) - fabs(bot1 - bot2);
+		*/
+		real_t y_overlap = SINGLE_DIM_OVERLAP(top1, bot1, top2, bot2);
 
 		if (x_overlap > y_overlap) {
 			if (s1.y > s2.y)
@@ -230,6 +235,100 @@ bool ball_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 
 		return false;
 	}
+}
+
+/* requires that s1 and s2 are segments that obey the x <= x2 convention and
+ * have nonzero length */
+bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
+	seg_data_t sd1 = s1.solid_data->seg_data;
+	seg_data_t sd2 = s2.solid_data->seg_data;
+	real_t Ax1 = s1.x, Ay1 = s1.y, Bx1 = s2.x, By1 = s2.y,
+	       Ax2 = sd1.x2, Ay2 = sd1.y2, Bx2 = sd2.x2, By2 = sd2.y2;
+	assert(Ax1 <= Ax2);
+	assert(Bx1 <= Bx2);
+	
+	real_t Am = (Ay1 - Ay2) / (Ax1 - Ax2);
+	real_t Bm = (By1 - By2) / (Bx1 - Bx2);
+	/* these aliases help keep names straight if arbitary
+	 * points are needed */
+	real_t Ax = Ax1, Ay = Ay1, Bx = Bx1, By = By1;
+	
+	/* vertical segment logic */
+	if (Ax1 == Ax2) {
+		if (Bx1 == Bx2) {
+			/* parallel verticals; check for y intersection */
+			real_t Aymin = min(Ay1, Ay2);
+			real_t Bymin = min(By1, By2);
+			real_t Aymax = max(Ay1, Ay2);
+			real_t Bymax = max(By1, By2);
+			real_t y_overlap = SINGLE_DIM_OVERLAP(Aymin, Aymax,
+					Bymin, Bymax);
+			/*
+			real_t ymin = min(Aymin, Bymin);
+			real_t ymax = max(Aymax, Bymax);
+			real_t y_overlap = ymax - ymin -
+				fabs(Aymax - Bymax) - fabs(Aymin - Bymin);
+			 */
+			if (y_overlap >= 0) {
+				//TODO dir
+
+				return true;
+			}
+
+			return false;
+		}
+		else {
+			//TODO factor out this logic
+			real_t Bx_int = Ax1;
+			real_t By_int = (Bx_int - Bx) * Bm + By;
+			if ((By1 >= By_int && By_int >= By2) ||
+					(By1 <= By_int && By_int <= By2)) {
+				//TODO dir
+				return true;
+			}
+
+			return false;
+		}
+	}
+	/* else, A is NOT vertical */
+	if (Bx1 == Bx2) {
+		real_t Ax_int = Bx1;
+		real_t Ay_int = (Ax_int - Ax) * Am + Ay;
+		if ((Ay1 >= Ay_int && Ay_int >= Ay2) ||
+				(Ay1 <= Ay_int && Ay_int <= Ay2)) {
+			//TODO dir
+			return true;
+		}
+
+		return false;
+	}
+	/* else, no verticals. GOOD */
+	
+	if (Am == Bm) { /* parallels */
+		real_t overlap = SINGLE_DIM_OVERLAP(Ax1, Ax2, Bx1, Bx2);
+		if (overlap >= 0) {
+			//TODO dir
+			return true;
+		}
+
+		return false;
+	}
+
+	/* find intersection of lines, see if that's included in the
+	 * segments */
+	real_t X_int = (Ax * Am - Bx * Bm + By - Ay) / (Am - Bm);
+
+	/* algebra sanity check */
+	real_t Y_int = (X_int - Ax) * Am + Ay;
+	real_t Y_int_alt = (X_int - Bx) * Bm + By;
+	assert(fabs(Y_int - Y_int_alt) <= 0.01);
+
+	if (Bx1 <= X_int && X_int <= Bx2 && Ax1 <= X_int && X_int <= Ax2) {
+		//TODO dir
+		return true;
+	}
+
+	return false;
 }
 
 /* Sets up record keeping so a solid knows which normal forces are exerted
