@@ -216,9 +216,12 @@ bool ball_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 				*dir = para - cv;
 				if (!dir->normalize()) {
 					/* ball centered on segment! */
-					/*TODO set dir to lv's perpendicular.
-					 *TODO need a tiebreaker, though;
-					 * velocity?? */
+					real_t tmp = lv.x;
+					lv.x = lv.y;
+					lv.y = tmp;
+					lv.normalize();
+					//TODO in which direction should this go?
+					*dir = lv;
 					printf("ball centered on segment!! LOOK OUT!!\n");
 				}
 			}
