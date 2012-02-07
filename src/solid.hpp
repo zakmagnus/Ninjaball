@@ -10,6 +10,7 @@ using namespace std;
 enum { /* solid types */
 	NB_SLD_RECT = 0,
 	NB_SLD_BALL,
+	NB_SLD_SEG,
 	NB_NUM_SLD_TYPES /* not a type, just a count */
 };
 
@@ -22,10 +23,15 @@ struct rect_data_t {
 struct ball_data_t {
 	real_t r;
 };
+struct seg_data_t {
+	/* "Other" endpoint. Convention: x <= x2 */
+	real_t x2, y2;
+};
 
 union solid_data_t {
 	struct rect_data_t rect_data;
 	struct ball_data_t ball_data;
+	struct seg_data_t seg_data;
 };
 
 class solid {
@@ -71,8 +77,10 @@ extern collision_function coll_funcs[NB_NUM_COLL_FUNCS];
 void init_coll_funcs(void);
 bool rect_rect_coll (solid& s1, solid& s2, vector2d_t *dir);
 bool ball_ball_coll (solid& s1, solid& s2, vector2d_t *dir);
-bool rect_ball_coll_ord (solid& s1, solid& s2, vector2d_t *dir);
 bool rect_ball_coll (solid& s1, solid& s2, vector2d_t *dir);
+bool ball_seg_coll (solid& s1, solid& s2, vector2d_t *dir);
+bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir);
+//TODO bool rect_seg_coll (solid& s1, solid& s2, vector2d_t *dir);
 
 /* requires t1 <= t2 and both are solid types */
 static unsigned get_coll_func_ind(unsigned t1, unsigned t2) {
@@ -92,7 +100,18 @@ static collision_function get_coll_func(unsigned t1, unsigned t2) {
 static bool solids_collide(solid& s1, solid& s2, vector2d_t *dir) {
 	collision_function f = get_coll_func(s1.get_solid_type(),
 			s2.get_solid_type());
-	return f(s1, s2, dir);
+	if (s1.get_solid_type() <= s2.get_solid_type()) {
+		return f(s1, s2, dir);
+	}
+	else {
+		bool ret = f(s2, s1, dir);
+
+		/* dir must go from first to second */
+		if (dir)
+			*dir = -*dir;
+
+		return ret;
+	}
 }
 
 /* adjust velocities due to collision, in the directions of

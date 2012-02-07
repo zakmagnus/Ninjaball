@@ -101,24 +101,11 @@ bool ball_ball_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	return true;
 }
 
-bool rect_ball_coll (solid& s1, solid& s2, vector2d_t *dir) {
-	if (s1.get_solid_type() < s2.get_solid_type())
-		return rect_ball_coll_ord(s1, s2, dir);
-
-	bool ret = rect_ball_coll_ord(s2, s1, dir); 
-
-	/* dir must go from first to second */
-	if (dir)
-		*dir = -*dir;
-	
-	return ret;
-}
-
 /* requires s1 is the rect and s2 is the ball 
  *
  * This function assumes an EDGE collision; one solid well inside the
  * other may fail to be detected. */
-bool rect_ball_coll_ord (solid& s1, solid& s2, vector2d_t *dir) {
+bool rect_ball_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	assert(s1.get_solid_type() == NB_SLD_RECT);
 	assert(s2.get_solid_type() == NB_SLD_BALL);
 	struct rect_data_t& rd = s1.solid_data->rect_data;
@@ -182,6 +169,64 @@ bool rect_ball_coll_ord (solid& s1, solid& s2, vector2d_t *dir) {
 	CHECK_DVEC;
 
 	return false;
+}
+
+/* requires s1 is the ball and s2 is the segment */
+/* requires the seg_data obeys the x <= x2 convention and has nonzero length */
+bool ball_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
+	struct ball_data_t& bd = s1.solid_data->ball_data;
+	struct seg_data_t& sd = s1.solid_data->seg_data;
+	vector2d_t cv(s1.x - s2.x, s1.y - s2.y);
+	vector2d_t lv = (sd.x2 - s2.x, sd.y2 - s2.y);
+	real_t seg_length = lv.norm();
+
+	real_t proj = cv.dot(lv) / seg_length;
+	if (proj < 0 || proj > seg_length) {
+		/* center does not project onto segment;
+		 * check distance from endpoints */
+		//TODO norm = 0 ??
+		real_t norm = cv.norm();
+		if (cv.norm() < bd.r) {
+			if (dir) {
+				/* dir must go FROM s1 INTO s2 */
+				*dir = cv / (-norm);		
+			}
+			return true;
+		}
+
+		vector2d_t ep2v(sd.x2 - s1.x, sd.y2 - s1.y);
+		norm = ep2v.norm();
+		if (norm < bd.r) {
+			if (dir) {
+				*dir = ep2v / norm;
+			}
+			return true;
+		}
+
+		return false;
+	}
+	else {
+		/* center projects directly onto segment;
+		 * check perpendicular distance */
+		vector2d_t para = lv * (proj / seg_length);
+		vector2d_t perp = cv - para;
+		real_t perp_dist = perp.norm();
+		if (perp_dist < bd.r) {
+			if (dir) {
+				*dir = para - cv;
+				if (!dir->normalize()) {
+					/* ball centered on segment! */
+					/*TODO set dir to lv's perpendicular.
+					 *TODO need a tiebreaker, though;
+					 * velocity?? */
+					printf("ball centered on segment!! LOOK OUT!!\n");
+				}
+			}
+			return true;
+		}
+
+		return false;
+	}
 }
 
 /* Sets up record keeping so a solid knows which normal forces are exerted
