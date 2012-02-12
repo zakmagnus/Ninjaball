@@ -43,8 +43,8 @@ bool rect_rect_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	struct rect_data_t& rd1 = s1.solid_data->rect_data;
 	struct rect_data_t& rd2 = s2.solid_data->rect_data;
 	real_t top1 = s1.y, top2 = s2.y, left1 = s1.x, left2 = s2.x,
-		bot1 = s1.y + rd1.h, bot2 = s2.y + rd2.h,
-		right1 = s1.x + rd1.w, right2 = s2.x + rd2.w;
+	       bot1 = s1.y + rd1.h, bot2 = s2.y + rd2.h,
+	       right1 = s1.x + rd1.w, right2 = s2.x + rd2.w;
 	if (left1 > right2)
 		return false;
 	if (top1 > bot2)
@@ -53,22 +53,22 @@ bool rect_rect_coll (solid& s1, solid& s2, vector2d_t *dir) {
 		return false;
 	if (top2 > bot1)
 		return false;
-	
+
 	if (dir) {
 		/* edge contact heuristic: the dimension with a greater overlap
 		 * is the one where the collision "really" happens */
 		/*
-		real_t xmin = min(left1, left2);
-		real_t xmax = max(right1, right2);
-		real_t x_overlap = xmax - xmin - fabs(left1 - left2) - fabs(right1 - right2);
-		*/
+		   real_t xmin = min(left1, left2);
+		   real_t xmax = max(right1, right2);
+		   real_t x_overlap = xmax - xmin - fabs(left1 - left2) - fabs(right1 - right2);
+		 */
 		real_t x_overlap = SINGLE_DIM_OVERLAP(left1, right1,
 				left2, right2);
 		/*
-		real_t ymin = min(top1, top2);
-		real_t ymax = max(bot1, bot2);
-		real_t y_overlap = ymax - ymin - fabs(top1 - top2) - fabs(bot1 - bot2);
-		*/
+		   real_t ymin = min(top1, top2);
+		   real_t ymax = max(bot1, bot2);
+		   real_t y_overlap = ymax - ymin - fabs(top1 - top2) - fabs(bot1 - bot2);
+		 */
 		real_t y_overlap = SINGLE_DIM_OVERLAP(top1, bot1, top2, bot2);
 
 		if (x_overlap > y_overlap) {
@@ -99,7 +99,7 @@ bool ball_ball_coll (solid& s1, solid& s2, vector2d_t *dir) {
 
 	if (c_axis.dot(c_axis) > (r1 + r2) * (r1 + r2))
 		return false;
-	
+
 	if (dir)
 		*dir = c_axis;
 
@@ -118,7 +118,7 @@ bool rect_ball_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	       bx = s2.x, by = s2.y;
 	real_t top = s1.y, left = s1.x,
 	       bot = s1.y + rd.h, right = s1.x + rd.w;
-	
+
 	if ((left < bx) && (bx < right)) {
 		if ((r > fabs(by - top)) || (r > fabs(by - bot))) {
 			if (dir) {
@@ -174,18 +174,18 @@ bool rect_ball_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	CHECK_DVEC;
 
 	return false;
-}
+	}
 
 /* requires s1 is the ball and s2 is the segment */
-/* requires the seg_data obeys the x <= x2 convention and has nonzero length */
+/* requires the seg has nonzero length */
 bool ball_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	struct ball_data_t& bd = s1.solid_data->ball_data;
 	struct seg_data_t& sd = s1.solid_data->seg_data;
 	vector2d_t cv(s1.x - s2.x, s1.y - s2.y);
-	vector2d_t lv = (sd.x2 - s2.x, sd.y2 - s2.y);
-	real_t seg_length = lv.norm();
+	real_t seg_length = sd.dir->norm();
+	assert(seg_length > 0);
 
-	real_t proj = cv.dot(lv) / seg_length;
+	real_t proj = cv.dot(*(sd.dir)) / seg_length;
 	if (proj < 0 || proj > seg_length) {
 		/* center does not project onto segment;
 		 * check distance from endpoints */
@@ -199,7 +199,8 @@ bool ball_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 			return true;
 		}
 
-		vector2d_t ep2v(sd.x2 - s1.x, sd.y2 - s1.y);
+		vector2d_t ep2v(sd.dir->x + s2.x - s1.x, sd.dir->y + s2.y - s1.y);
+		//TODO norm = 0 ??
 		norm = ep2v.norm();
 		if (norm < bd.r) {
 			if (dir) {
@@ -213,21 +214,24 @@ bool ball_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	else {
 		/* center projects directly onto segment;
 		 * check perpendicular distance */
-		vector2d_t para = lv * (proj / seg_length);
+		vector2d_t para = (*(sd.dir)) * (proj / seg_length);
 		vector2d_t perp = cv - para;
 		real_t perp_dist = perp.norm();
 		if (perp_dist < bd.r) {
 			if (dir) {
-				*dir = para - cv;
+				*dir = -perp; /* FROM ball INTO segment */
 				if (!dir->normalize()) {
 					/* ball centered on segment! */
-					real_t tmp = lv.x;
-					lv.x = lv.y;
-					lv.y = tmp;
-					lv.normalize();
-					//TODO in which direction should this go?
-					*dir = lv;
-					printf("ball centered on segment!! LOOK OUT!!\n");
+					/* This is a -pi/2 rotation. If the
+					 * seg is directed, that's the right
+					 * way (INTO the segment); if it's
+					 * not, then I don't know what to
+					 * make the direction, so this works
+					 * as well as anything.
+					 */
+					(*dir).x = sd.dir->y;
+					(*dir).y = -sd.dir->x;
+					(*dir).normalize();
 				}
 			}
 			return true;
@@ -237,22 +241,60 @@ bool ball_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	}
 }
 
-/* requires that s1 and s2 are segments that obey the x <= x2 convention and
- * have nonzero length */
+static void seg_seg_coll_dir(struct seg_data_t& sd1, struct seg_data_t& sd2,
+		vector2d_t *dir) {
+	if (!dir)
+		return;
+
+	vector2d_t d1 = *sd1.dir;
+	vector2d_t d2 = *sd2.dir;
+	d1.normalize();
+	d2.normalize();
+	/* these are lines, not vectors; establish
+	 * minimum separation between them */
+	if (d1.dot(d2) < 0)
+		d1 = -d1;
+
+	real_t ang1 = dir_to_angle(d1);
+	real_t ang2 = dir_to_angle(d2);
+	real_t avg_ang = (ang1 + ang2) / 2;
+	real_t rotation = 0;
+	real_t diff = -M_PI / 2;
+	if (sd1.directed) {
+		diff = avg_ang - ang1;
+	}
+	else if (sd2.directed) {
+		diff = ang2 - avg_ang;
+	}
+	if (sd1.directed || sd2.directed) {
+		if (between_ord(0, diff, M_PI) ||
+				between_ord(-2 * M_PI, diff, -M_PI)) {
+			rotation = M_PI / 2;
+		}
+	}
+
+	avg_ang += rotation;
+	if (avg_ang > 2 * M_PI)
+		avg_ang -= 2 * M_PI;
+	else if (avg_ang < 0)
+		avg_ang += 2 * M_PI;
+	vector2d_t normal = angle_to_dir(avg_ang);
+}
+
+/* requires that s1 and s2 are segments that have nonzero length */
 bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	seg_data_t sd1 = s1.solid_data->seg_data;
 	seg_data_t sd2 = s2.solid_data->seg_data;
-	real_t Ax1 = s1.x, Ay1 = s1.y, Bx1 = s2.x, By1 = s2.y,
-	       Ax2 = sd1.x2, Ay2 = sd1.y2, Bx2 = sd2.x2, By2 = sd2.y2;
-	assert(Ax1 <= Ax2);
-	assert(Bx1 <= Bx2);
-	
+	real_t Ax1 = s1.x, Ay1 = s1.y, Bx1 = s2.x, By1 = s2.y;
+	real_t Ax2 = Ax1 + sd1.dir->x, Ay2 = Ay1 + sd1.dir->y,
+	       Bx2 = Bx1 + sd2.dir->x, By2 = By1 + sd2.dir->y;
+
 	real_t Am = (Ay1 - Ay2) / (Ax1 - Ax2);
 	real_t Bm = (By1 - By2) / (Bx1 - Bx2);
-	/* these aliases help keep names straight if arbitary
+	/* these aliases help keep names straight when arbitrary
 	 * points are needed */
 	real_t Ax = Ax1, Ay = Ay1, Bx = Bx1, By = By1;
-	
+
 	/* vertical segment logic */
 	if (Ax1 == Ax2) {
 		if (Bx1 == Bx2) {
@@ -263,27 +305,39 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 			real_t Bymax = max(By1, By2);
 			real_t y_overlap = SINGLE_DIM_OVERLAP(Aymin, Aymax,
 					Bymin, Bymax);
-			/*
-			real_t ymin = min(Aymin, Bymin);
-			real_t ymax = max(Aymax, Bymax);
-			real_t y_overlap = ymax - ymin -
-				fabs(Aymax - Bymax) - fabs(Aymin - Bymin);
-			 */
 			if (y_overlap >= 0) {
-				//TODO dir
-
+				if (dir) {
+					/* Use segment direction, if any.
+					 * Note that if both segments are
+					 * directed, they may be colliding
+					 * in a way that doesn't make sense,
+					 * with strange results.
+					 */
+					if (sd1.directed) {
+						if (sd1.dir->y > 0)
+							*dir = leftvec;
+						else
+							*dir = rightvec;
+					}
+					else if (sd2.directed) {
+						if (sd2.dir->y > 0)
+							*dir = rightvec;
+						else
+							*dir = leftvec;
+					}
+				}
 				return true;
 			}
 
 			return false;
 		}
 		else {
-			//TODO factor out this logic
+			/* only A is vertical */
 			real_t Bx_int = Ax1;
-			real_t By_int = (Bx_int - Bx) * Bm + By;
-			if ((By1 >= By_int && By_int >= By2) ||
-					(By1 <= By_int && By_int <= By2)) {
-				//TODO dir
+			real_t By_int = LINE_Y_COORD(Bx_int, Bm, Bx, By);
+			//real_t By_int = (Bx_int - Bx) * Bm + By;
+			if (between(By1, By_int, By2)) {
+				seg_seg_coll_dir(sd1, sd2, dir);
 				return true;
 			}
 
@@ -293,21 +347,26 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	/* else, A is NOT vertical */
 	if (Bx1 == Bx2) {
 		real_t Ax_int = Bx1;
-		real_t Ay_int = (Ax_int - Ax) * Am + Ay;
-		if ((Ay1 >= Ay_int && Ay_int >= Ay2) ||
-				(Ay1 <= Ay_int && Ay_int <= Ay2)) {
-			//TODO dir
+		real_t Ay_int = LINE_Y_COORD(Ax_int, Am, Ax, Ay);
+		//real_t Ay_int = (Ax_int - Ax) * Am + Ay;
+		if (between(Ay1, Ay_int, Ay2)) {
+			seg_seg_coll_dir(sd1, sd2, dir);
 			return true;
 		}
 
 		return false;
 	}
+
 	/* else, no verticals. GOOD */
-	
+
 	if (Am == Bm) { /* parallels */
-		real_t overlap = SINGLE_DIM_OVERLAP(Ax1, Ax2, Bx1, Bx2);
+		real_t Axmin = min(Ax1, Ax2);
+		real_t Bxmin = min(Bx1, Bx2);
+		real_t Axmax = max(Ax1, Ax2);
+		real_t Bxmax = max(Bx1, Bx2);
+		real_t overlap = SINGLE_DIM_OVERLAP(Axmin, Axmax, Bxmin, Bxmax);
 		if (overlap >= 0) {
-			//TODO dir
+			seg_seg_coll_dir(sd1, sd2, dir);
 			return true;
 		}
 
@@ -319,12 +378,14 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	real_t X_int = (Ax * Am - Bx * Bm + By - Ay) / (Am - Bm);
 
 	/* algebra sanity check */
-	real_t Y_int = (X_int - Ax) * Am + Ay;
-	real_t Y_int_alt = (X_int - Bx) * Bm + By;
+	real_t Y_int = LINE_Y_COORD(X_int, Am, Ax, Ay);
+	real_t Y_int_alt = LINE_Y_COORD(X_int, Bm, Bx, By);
+	//real_t Y_int = (X_int - Ax) * Am + Ay;
+	//real_t Y_int_alt = (X_int - Bx) * Bm + By;
 	assert(fabs(Y_int - Y_int_alt) <= 0.01);
 
-	if (Bx1 <= X_int && X_int <= Bx2 && Ax1 <= X_int && X_int <= Ax2) {
-		//TODO dir
+	if (between(Bx1, X_int, Bx2) && between(Ax1, X_int, Ax2)) {
+		seg_seg_coll_dir(sd1, sd2, dir);
 		return true;
 	}
 
@@ -418,7 +479,7 @@ void resolve_collision(solid& s1, solid& s2, physics_t *p1, physics_t *p2,
 	real_t norm_d = dir.norm();
 	assert(norm_d > 0.0);
 	dir = dir / norm_d;
-	
+
 	vector2d_t& v1 = p1->velocity;
 	c1 = 0.0;
 	if (v1.x != 0 || v1.y != 0)

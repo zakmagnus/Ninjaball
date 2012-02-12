@@ -24,8 +24,11 @@ struct ball_data_t {
 	real_t r;
 };
 struct seg_data_t {
-	/* "Other" endpoint. Convention: x <= x2 */
-	real_t x2, y2;
+	vector2d_t *dir;
+	/* if directed is true, it indicates that this segment is part of
+	 * an ensemble with an "inside" which is at a negative rotation
+	 * from the dir vector */
+	bool directed;
 };
 
 union solid_data_t {

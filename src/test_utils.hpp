@@ -43,4 +43,10 @@ vector2d_t angle_to_dir(real_t angle);
 	 - fabs((v1max) - (v2max))\
 	 - fabs((v1min) - (v2min)))
 
+#define between_ord(v1,v2,v3) ((v1) <= (v2) && (v2) <= (v3))
+#define between(v1,v2,v3) (between_ord((v1),(v2),(v3)) ||\
+		between_ord((v3),(v2),(v1)))
+
+#define LINE_Y_COORD(x,m,x0,y0) ((((x) - (x0)) * (m)) + (y0))
+
 #endif
