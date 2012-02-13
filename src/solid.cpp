@@ -252,21 +252,33 @@ static void seg_seg_coll_dir(struct seg_data_t& sd1, struct seg_data_t& sd2,
 	d2.normalize();
 	/* these are lines, not vectors; establish
 	 * minimum separation between them */
-	if (d1.dot(d2) < 0)
+	bool d1_negated = false;
+	if (d1.dot(d2) < 0) {
 		d1 = -d1;
+		d1_negated = true;
+	}
 
 	real_t ang1 = dir_to_angle(d1);
 	real_t ang2 = dir_to_angle(d2);
 	real_t avg_ang = (ang1 + ang2) / 2;
-	real_t rotation = 0;
-	real_t diff = -M_PI / 2;
+	real_t rotation = -M_PI / 2;
+	real_t diff = 0;
 	if (sd1.directed) {
 		diff = avg_ang - ang1;
+
+		if (diff == 0) {
+			rotation = M_PI / 2; /* positive = away from d1 */
+		}
+		if (d1_negated)
+			rotation = -rotation;
 	}
 	else if (sd2.directed) {
 		diff = ang2 - avg_ang;
+		if (diff == 0) {
+			rotation = -M_PI / 2; /* negative = into d2 */
+		}
 	}
-	if (sd1.directed || sd2.directed) {
+	if (diff != 0) {
 		if (between_ord(0, diff, M_PI) ||
 				between_ord(-2 * M_PI, diff, -M_PI)) {
 			rotation = M_PI / 2;
@@ -278,7 +290,9 @@ static void seg_seg_coll_dir(struct seg_data_t& sd1, struct seg_data_t& sd2,
 		avg_ang -= 2 * M_PI;
 	else if (avg_ang < 0)
 		avg_ang += 2 * M_PI;
+
 	vector2d_t normal = angle_to_dir(avg_ang);
+	*dir = normal;
 }
 
 /* requires that s1 and s2 are segments that have nonzero length */
