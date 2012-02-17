@@ -1,5 +1,6 @@
 #include <math.h>
 #include "solid.hpp"
+#include "seg.hpp"
 #include "test_utils.hpp"
 
 collision_function coll_funcs[NB_NUM_COLL_FUNCS];
@@ -241,10 +242,14 @@ bool ball_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	}
 }
 
-static void seg_seg_coll_dir(struct seg_data_t& sd1, struct seg_data_t& sd2,
-		vector2d_t *dir) {
+/* Finds the normal vector FROM s1 INTO s2.
+ * requires that s1 and s2 collide */
+static void seg_seg_coll_dir(solid& s1, solid& s2, vector2d_t *dir) {
 	if (!dir)
 		return;
+
+	seg_data_t& sd1 = s1.solid_data->seg_data;
+	seg_data_t& sd2 = s2.solid_data->seg_data;
 
 	vector2d_t d1 = *sd1.dir;
 	vector2d_t d2 = *sd2.dir;
@@ -320,26 +325,7 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 			real_t y_overlap = SINGLE_DIM_OVERLAP(Aymin, Aymax,
 					Bymin, Bymax);
 			if (y_overlap >= 0) {
-				if (dir) {
-					/* Use segment direction, if any.
-					 * Note that if both segments are
-					 * directed, they may be colliding
-					 * in a way that doesn't make sense,
-					 * with strange results.
-					 */
-					if (sd1.directed) {
-						if (sd1.dir->y > 0)
-							*dir = leftvec;
-						else
-							*dir = rightvec;
-					}
-					else if (sd2.directed) {
-						if (sd2.dir->y > 0)
-							*dir = rightvec;
-						else
-							*dir = leftvec;
-					}
-				}
+				seg_seg_coll_dir(s1, s2, dir);
 				return true;
 			}
 
@@ -349,9 +335,8 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 			/* only A is vertical */
 			real_t Bx_int = Ax1;
 			real_t By_int = LINE_Y_COORD(Bx_int, Bm, Bx, By);
-			//real_t By_int = (Bx_int - Bx) * Bm + By;
 			if (between(By1, By_int, By2)) {
-				seg_seg_coll_dir(sd1, sd2, dir);
+				seg_seg_coll_dir(s1, s2, dir);
 				return true;
 			}
 
@@ -362,9 +347,8 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	if (Bx1 == Bx2) {
 		real_t Ax_int = Bx1;
 		real_t Ay_int = LINE_Y_COORD(Ax_int, Am, Ax, Ay);
-		//real_t Ay_int = (Ax_int - Ax) * Am + Ay;
 		if (between(Ay1, Ay_int, Ay2)) {
-			seg_seg_coll_dir(sd1, sd2, dir);
+			seg_seg_coll_dir(s1, s2, dir);
 			return true;
 		}
 
@@ -380,7 +364,7 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 		real_t Bxmax = max(Bx1, Bx2);
 		real_t overlap = SINGLE_DIM_OVERLAP(Axmin, Axmax, Bxmin, Bxmax);
 		if (overlap >= 0) {
-			seg_seg_coll_dir(sd1, sd2, dir);
+			seg_seg_coll_dir(s1, s2, dir);
 			return true;
 		}
 
@@ -394,13 +378,164 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	/* algebra sanity check */
 	real_t Y_int = LINE_Y_COORD(X_int, Am, Ax, Ay);
 	real_t Y_int_alt = LINE_Y_COORD(X_int, Bm, Bx, By);
-	//real_t Y_int = (X_int - Ax) * Am + Ay;
-	//real_t Y_int_alt = (X_int - Bx) * Bm + By;
 	assert(fabs(Y_int - Y_int_alt) <= 0.01);
 
 	if (between(Bx1, X_int, Bx2) && between(Ax1, X_int, Ax2)) {
-		seg_seg_coll_dir(sd1, sd2, dir);
+		seg_seg_coll_dir(s1, s2, dir);
 		return true;
+	}
+
+	return false;
+}
+
+/* requires s1 is the ball and s2 is a sane poly (no nulls) */
+bool ball_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
+	assert(s1.get_solid_type() == NB_SLD_BALL);
+	assert(s1.get_solid_type() == NB_SLD_POLY);
+
+	const struct poly_data_t& pd = s2.solid_data->poly_data;
+
+	for (int i = 0; i < pd.num_segs; i++) {
+		assert(pd.segs);
+#define SEG_PTR(i) ((seg *)(pd.segs[(i)]))
+		if (solids_collide(s1, *SEG_PTR(i), dir)) {
+			if (i + 1 == pd.num_segs) /* no other collisions */
+				return true;
+
+			bool corner = false;
+			real_t corner_x, corner_y;
+
+			/* next-segment corner */
+			assert(SEG_PTR(i + 1));
+			if (solids_collide(s1, *SEG_PTR(i + 1), NULL)) {
+				corner = true;
+				corner_x = SEG_PTR(i + 1)->x;
+				corner_y = SEG_PTR(i + 1)->y;
+			}
+			/* previous-segment corner */
+			else if (i == 0) {
+				assert(SEG_PTR(pd.num_segs - 1));
+				if (solids_collide(s1, *SEG_PTR
+							(pd.num_segs - 1),
+							NULL)) {
+					corner = true;
+					corner_x = SEG_PTR(i)->x;
+					corner_y = SEG_PTR(i)->y;
+				}
+			}
+
+			if (corner) {
+				vector2d_t normal(corner_x - s1.x,
+						corner_y - s1.y);
+				normal.normalize();
+				/* TODO if normalization failed, then the ball
+				 * is centered on the corner, so compute
+				 * "average in-direction" of the two
+				 * corner-formers and use that to find the
+				 * normal */
+				*dir = normal;
+			}
+			/* else no corner, so dir is already set correctly */
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static void poly_poly_coll_corners(const poly_data_t& pd1, int i,
+		const poly_data_t& pd2, int j, int& corner1, int& corner2) {
+	/*XXX there's some redundancy in all these
+	 * checks, but removing it adds complexity
+	 * and there's enough code here aleady.
+	 * Maybe something to consider if performance
+	 * is an issue. */
+
+	for (int I = -1; I < 2; I++) {
+		int index1 = i + I;
+		if (index1 < 0)
+			index1 += pd1.num_segs;
+		if (index1 >= pd1.num_segs)
+			index1 -= pd1.num_segs;
+		for (int J = -1; J < 2; J++) {
+			if (I == 0 && J == 0)
+				continue;
+
+			int index2 = j + J;
+			if (index2 < 0)
+				index2 += pd2.num_segs;
+			if (index2 >= pd2.num_segs)
+				index2 -= pd2.num_segs;
+			if (solids_collide(*(seg *)pd1.segs[index1],
+						*(seg *)pd2.segs[index2],
+						NULL)) {
+				if (corner1 < 0 && I != 0)
+					corner1 = index1;
+				if (corner2 < 0 && J != 0)
+					corner2 = index2;
+				if (corner1 >= 0 && corner2 >= 0)
+					break;
+			}
+
+		}
+		if (corner1 >= 0 && corner2 >= 0)
+			break;
+	}
+}
+
+/* requires s1 and s2 are sane polies (no nulls) */
+bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
+	assert(s1.get_solid_type() == NB_SLD_POLY);
+	assert(s1.get_solid_type() == NB_SLD_POLY);
+
+	const struct poly_data_t pd1 = s1.solid_data->poly_data;
+	const struct poly_data_t pd2 = s2.solid_data->poly_data;
+
+	assert(pd1.segs);
+	assert(pd2.segs);
+	for (int i = 0; i < pd1.num_segs; i++) {
+		for (int j = i + 1; j < pd1.num_segs; j++) {
+			if (solids_collide(*(seg *)(pd1.segs[i]),
+						*(seg *)(pd2.segs[j]),
+						NULL)) {
+				int corner1, corner2;
+				poly_poly_coll_corners(pd1, i, pd2, j,
+						corner1, corner2);
+
+				seg *seg1 = (seg *)pd1.segs[i];
+				seg *seg2 = (seg *)pd2.segs[j];
+
+#define CREATE_CORNER(corneri,i,pd,ptr) do {\
+	bool prev = false;\
+	prev = (corneri == i - 1) || (i == 0 && (corneri == pd.num_segs - 1));\
+	vector2d_t buf;\
+	if (prev)\
+	average_dir(*((seg *)pd1.segs[corneri])->\
+			solid_data->seg_data.dir,\
+			*((seg *)pd1.segs[i])->\
+			solid_data->seg_data.dir,\
+			&buf);\
+	else\
+	average_dir(*((seg *)pd1.segs[i])->\
+			solid_data->seg_data.dir,\
+			*((seg *)pd1.segs[corneri])->\
+			solid_data->seg_data.dir,\
+			&buf);\
+	ptr = new seg(0, 0, buf.x, buf.y);\
+} while (0)
+				if (corner1 >= 0) {
+					CREATE_CORNER(corner1, i, pd1, seg1);
+				}
+				if (corner2 >= 0) {
+					CREATE_CORNER(corner2, j, pd2, seg2);
+				}
+
+				seg_seg_coll_dir(*seg1, *seg2, dir);
+
+				return true;
+			}
+		}
 	}
 
 	return false;
@@ -478,6 +613,7 @@ void init_coll_funcs(void) {
 		ball_ball_coll;
 	coll_funcs[get_coll_func_ind(NB_SLD_RECT, NB_SLD_BALL)] =
 		rect_ball_coll;
+	//TODO segs, polys
 }
 
 /* Requires dir is a direction and not a 0 vector, pointing FROM s1 INTO s2. */

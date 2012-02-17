@@ -30,5 +30,6 @@ static vector2d_t upvec = -downvec;
 
 vector2d_t angle_to_dir(real_t angle);
 real_t dir_to_angle(vector2d_t& dir);
+void average_dir(vector2d_t& dir1, vector2d_t& dir2, vector2d_t *buf);
 
 #endif

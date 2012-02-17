@@ -1,4 +1,5 @@
 #include <math.h>
+#include <assert.h>
 #include "vector.hpp"
 
 vector2d_t::vector2d_t(real_t x, real_t y) {
@@ -100,4 +101,21 @@ real_t dir_to_angle(vector2d_t& dir) {
 		ang += 2 * M_PI;
 
 	return ang;
+}
+
+void average_dir(vector2d_t& dir1, vector2d_t& dir2, vector2d_t *buf) {
+	assert(buf);
+
+	vector2d_t d1 = dir1;
+	vector2d_t d2 = dir2;
+	bool normed = d1.normalize();
+	assert(normed);
+	normed = d2.normalize();
+	assert(normed);
+
+	real_t ang1 = dir_to_angle(d1);
+	real_t ang2 = dir_to_angle(d2);
+	real_t avg_ang = (ang1 + ang2) / 2;
+	vector2d_t avg_dir = angle_to_dir(avg_ang);
+	*buf = avg_dir;
 }

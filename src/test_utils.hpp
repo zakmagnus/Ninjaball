@@ -33,7 +33,6 @@ void apply_surface (SDL_Surface *src, SDL_Surface *dst, int x, int y,
 		SDL_Rect *clip);
 void render_rope(SDL_Surface *srf, ropedata& rope, SDL_Rect *camera);
 void render_pointer(SDL_Surface *srf, ball *b, vector2d_t& dir, SDL_Rect *camera);
-vector2d_t angle_to_dir(real_t angle);
 
 /* mathy stuff */
 #define min(a,b) ((a)<(b)? (a) : (b))

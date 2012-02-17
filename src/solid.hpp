@@ -11,6 +11,7 @@ enum { /* solid types */
 	NB_SLD_RECT = 0,
 	NB_SLD_BALL,
 	NB_SLD_SEG,
+	NB_SLD_POLY,
 	NB_NUM_SLD_TYPES /* not a type, just a count */
 };
 
@@ -30,11 +31,20 @@ struct seg_data_t {
 	 * from the dir vector */
 	bool directed;
 };
+struct poly_data_t {
+	/* TODO the intention is that these segs are just used for collisions,
+	 * and don't otherwise have physical properties of their own
+	 * like elasticity and onbases, etc. Maybe factor out the
+	 * strictly collision-relevant data to its own container? */
+	void **segs;
+	unsigned num_segs;
+};
 
 union solid_data_t {
 	struct rect_data_t rect_data;
 	struct ball_data_t ball_data;
 	struct seg_data_t seg_data;
+	struct poly_data_t poly_data;
 };
 
 class solid {
@@ -83,7 +93,8 @@ bool ball_ball_coll (solid& s1, solid& s2, vector2d_t *dir);
 bool rect_ball_coll (solid& s1, solid& s2, vector2d_t *dir);
 bool ball_seg_coll (solid& s1, solid& s2, vector2d_t *dir);
 bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir);
-//TODO bool rect_seg_coll (solid& s1, solid& s2, vector2d_t *dir);
+bool ball_poly_coll (solid& s1, solid& s2, vector2d_t *dir);
+bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir);
 
 /* requires t1 <= t2 and both are solid types */
 static unsigned get_coll_func_ind(unsigned t1, unsigned t2) {
