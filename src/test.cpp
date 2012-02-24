@@ -7,6 +7,8 @@
 #include "solid.hpp"
 #include "wall.hpp"
 #include "ball.hpp"
+#include "polywall.hpp"
+#include "poly.hpp"
 using namespace std;
 
 #define SCREEN_WIDTH  800
@@ -31,7 +33,8 @@ void update_camera(void);
 
 static SDL_Surface *screen, *img1, *img2, *img3;
 static SDL_Rect camera;
-static vector<wall *> *walls;
+//static vector<wall *> *walls;
+static vector<polywall *> *walls;
 static vector<moveable_data> *moves;
 static ball *guyball;
 static player *guy;
@@ -56,7 +59,7 @@ int main (int argc, char **argv) {
 
 	guyball = new ball(170, 500, img3->h / 2.0, 1.0);
 	guy = new player(img3, guyball);
-	MOVES_PUSH(guy);
+	//MOVES_PUSH(guy);
 
 	/*
 	MOVES_PUSH(new Moveable(img2, new rect(150, 200, img2->h, img2->w,
@@ -67,9 +70,12 @@ int main (int argc, char **argv) {
 					1.0)));
 	*/
 
+	/*
 	walls->push_back(new wall(img1, 100, 600, img1->h, img1->w));
 	walls->push_back(new wall(img1, 150, -200, img1->h, img1->w));
 	walls->push_back(new wall(img1, 100 - img1->w, 300, img1->h, img1->w));
+	*/
+	walls->push_back(new polywall(100, 600, 100, 100));
 	
 	SDL_Event event;
 
@@ -232,7 +238,7 @@ int init_stuff (void) {
 		return -1;
 	}
 
-	walls = new vector<wall *>();
+	walls = new vector<polywall *>();
 	if (!walls) {
 		printf("could not allocate walls vector\n");
 		return -1;

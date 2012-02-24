@@ -36,7 +36,7 @@ void render_pointer(SDL_Surface *srf, ball *b, vector2d_t& dir, SDL_Rect *camera
 
 /* mathy stuff */
 #define min(a,b) ((a)<(b)? (a) : (b))
-#define max(a,b) ((a)>(b)? (a) : (b))
+#define max(a,b) ((a)>=(b)? (a) : (b))
 #define SINGLE_DIM_OVERLAP(v1min,v1max,v2min,v2max) \
 	(max((v1max), (v2max)) - min((v1min), (v2min))\
 	 - fabs((v1max) - (v2max))\

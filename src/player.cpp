@@ -129,7 +129,7 @@ void player::update_rope(void) {
 	}
 }
 
-void player::choose_action(vector<wall *> *walls, real_t dt) {
+void player::choose_action(vector<polywall *> *walls, real_t dt) {
 	if (hook_flying)
 		hook_flying = flyhook->advance(this, dt);
 	if (hook_flying) {

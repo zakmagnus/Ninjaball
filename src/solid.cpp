@@ -318,6 +318,8 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	if (Ax1 == Ax2) {
 		if (Bx1 == Bx2) {
 			/* parallel verticals; check for y intersection */
+			if (Ax1 != Bx1)
+				return false;
 			real_t Aymin = min(Ay1, Ay2);
 			real_t Bymin = min(By1, By2);
 			real_t Aymax = max(Ay1, Ay2);
@@ -360,10 +362,12 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	if (Am == Bm) { /* parallels */
 		real_t Axmin = min(Ax1, Ax2);
 		real_t Bxmin = min(Bx1, Bx2);
-		real_t Axmax = max(Ax1, Ax2);
-		real_t Bxmax = max(Bx1, Bx2);
-		real_t overlap = SINGLE_DIM_OVERLAP(Axmin, Axmax, Bxmin, Bxmax);
-		if (overlap >= 0) {
+		real_t y1 = LINE_Y_COORD(Axmin, Bm, Bx, By);
+		real_t y2 = LINE_Y_COORD(Bxmin, Bm, Bx, By);
+		real_t y3 = LINE_Y_COORD(Axmin, Am, Ax, Ay);
+		real_t y4 = LINE_Y_COORD(Bxmin, Am, Ax, Ay);
+		//TODO standardize this real_t closeness
+		if (fabs(y1 - y2) <= 0.001 || fabs(y3 - y4) <= 0.001) {
 			seg_seg_coll_dir(s1, s2, dir);
 			return true;
 		}
@@ -444,6 +448,33 @@ bool ball_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	return false;
 }
 
+/* Checks whether x, y is inside the polygon given by sd.
+ * Requires that sd.segs is non-null, contains no nulls,
+ * and is generally a sane polygon. */
+static bool is_in_poly(real_t x, real_t y, const poly_data_t& sd) {
+	assert(sd.segs);
+	assert(*sd.segs);
+	assert(((seg *)sd.segs[0])->solid_data->seg_data.directed);
+
+	vector2d_t rot = *((seg *)sd.segs[0])->solid_data->seg_data.dir;
+	/* pi/2 rotation; should be AWAY from the polygon */
+	real_t tmp = rot.x;
+	rot.x = -rot.y;
+	rot.y = tmp;
+	real_t cx = ((seg *)sd.segs[0])->x;
+	real_t cy = ((seg *)sd.segs[0])->y;
+	seg tester(cx, cy, rot.x, rot.y);
+
+	int num_hit = 0;
+	for (int i = 0; i < sd.num_segs; i++) {
+		assert(sd.segs[i]);
+		if (solids_collide(*(seg *)sd.segs[i], tester, NULL))
+			num_hit++;
+	}
+
+	return (num_hit % 2) == 1;
+}
+
 static void poly_poly_coll_corners(const poly_data_t& pd1, int i,
 		const poly_data_t& pd2, int j, int& corner1, int& corner2) {
 	/*XXX there's some redundancy in all these
@@ -484,7 +515,123 @@ static void poly_poly_coll_corners(const poly_data_t& pd1, int i,
 	}
 }
 
-/* requires s1 and s2 are sane polies (no nulls) */
+/* i2 can be negative and if so will indicate there's only one point to
+ * check */
+/*XXX this gives somewhat arbitrary behavior near corners, when two segments
+ * could be equidistant, so maybe make a corner of those two in that case? */
+static seg *nearest_segment(int i1, int i2, solid& poly1, solid& poly2) {
+	assert(i1 >= 0);
+	seg **corners = (seg **) poly1.solid_data->poly_data.segs;
+	const poly_data_t& pd = poly2.solid_data->poly_data;
+
+	real_t x, y;
+	real_t min_d = -1;
+	seg *closest = NULL;
+
+#define FIND_CLOSEST(index) do {\
+	x = corners[index]->x + poly1.x;\
+	y = corners[index]->y + poly1.y;\
+	for (int i = 0; i < pd.num_segs; i++) {\
+		seg *segi = (seg *)pd.segs[i];\
+		vector2d_t *segdir = segi->solid_data->seg_data.dir;\
+		vector2d_t cv(x - (segi->x + poly2.x),\
+				y - (segi->y + poly2.y));\
+		vector2d_t proj = (*segdir) *\
+		(cv.dot(*segdir) / segdir->dot(*segdir));\
+		vector2d_t perp = (*segdir) - proj;\
+		real_t d = perp.norm();\
+		if ((!closest) || d < min_d) {\
+			min_d = d;\
+			closest = segi;\
+		}\
+	}\
+} while (0)
+
+	FIND_CLOSEST(i1);
+	if (i2 >= 0) {
+		FIND_CLOSEST(i2);
+	}
+
+	return closest;
+}
+
+/* Finds a corner of a polygon that's inside another polygon, if any such
+ * exist. Also finds the vector between that corner and the part of the
+ * polygon it's closest to. If two neighboring corners are both in the
+ * polygon, the segment between them is used to determine the correct vector.
+ *
+ * The vector goes FROM the corner INTO the polygon. */
+static bool corner_in_poly_dir(solid& poly1, solid& poly2, vector2d_t *buf) {
+	const poly_data_t& corns = poly1.solid_data->poly_data;
+	const poly_data_t& segs = poly2.solid_data->poly_data;
+
+	for (int i = 0; i < corns.num_segs; i++) {
+		assert(corns.segs[i]);
+		real_t cx = ((seg *)corns.segs[i])->x + poly1.x;
+		real_t cy = ((seg *)corns.segs[i])->y + poly1.y;
+		if (is_in_poly(cx, cy, segs)) {
+			if (!buf)
+				return true;
+			/* neighbor check: see if an entire segment is
+			 * inside the other polygon */
+			int other_i = -1;
+			seg *in_seg = NULL;
+			if (i == 0) {
+				real_t ncx = ((seg *)corns.segs
+						[corns.num_segs - 1])->x
+						+ poly1.x;
+				real_t ncy = ((seg *)corns.segs
+						[corns.num_segs - 1])->y
+						+ poly1.y;
+				if (is_in_poly(ncx, ncy, segs)) {
+					other_i = corns.num_segs - 1;
+					in_seg = (seg *)corns.segs
+						[corns.num_segs - 1];
+				}
+			}
+			if (i + 1 < corns.num_segs) {
+				real_t ncx = ((seg *)corns.segs[i + 1])->x
+					+ poly1.x;
+				real_t ncy = ((seg *)corns.segs[i + 1])->y
+					+ poly1.y;
+				if (is_in_poly(ncx, ncy, segs)) {
+					other_i = i + 1;
+					in_seg = (seg *)corns.segs[i];
+				}
+			}
+
+			seg *nearest = nearest_segment(i, other_i,
+					poly1, poly2);
+			vector2d_t coll_dir;
+			if (in_seg) {
+				/* FROM corner INTO poly */
+				/*XXX nearest is not a global-coordinate
+				 * vector! seg_seg_coll_dir doesn't care,
+				 * but this is not a strict guarantee... */
+				seg_seg_coll_dir(*in_seg, *nearest, &coll_dir);
+			}
+			else {
+				vector2d_t *segdir = nearest->solid_data->
+					seg_data.dir;
+				vector2d_t cv(cx - (nearest->x + poly2.x),
+						cy - (nearest->y + poly2.y));
+				vector2d_t proj = (*segdir) *
+					(cv.dot(*segdir)
+					 / segdir->dot(*segdir));
+				/* FROM corner INTO poly */
+				coll_dir = proj - cv;
+				coll_dir.normalize(); //TODO false?
+			}
+
+			*buf = coll_dir;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/* requires s1 and s2 are sane polygons (no nulls) */
 bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	assert(s1.get_solid_type() == NB_SLD_POLY);
 	assert(s1.get_solid_type() == NB_SLD_POLY);
@@ -494,6 +641,43 @@ bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 
 	assert(pd1.segs);
 	assert(pd2.segs);
+
+	if (!dir) {
+		bool ret = corner_in_poly_dir(s1, s2, NULL);
+		if (ret)
+			return true;
+		ret = corner_in_poly_dir(s2, s1, NULL);
+		if (ret)
+			return true;
+	}
+	vector2d_t coll_dir1;
+	vector2d_t coll_dir2;
+	bool dir1 = corner_in_poly_dir(s1, s2, &coll_dir1);
+	bool dir2 = corner_in_poly_dir(s2, s1, &coll_dir2);
+	if (!(dir1 || dir2))
+		return false;
+	
+	if (dir1 && dir2) {
+		/* Switching arg order for corner_in_poly makes the dir
+		 * go backwards so it has to be negated here.
+		 * The two coll_dirs SHOULD be similar, meaning probably
+		 * within pi/2 of each other */
+		average_dir(coll_dir1, -coll_dir2, dir);
+
+		return true;
+	}
+
+	if (dir1) {
+		*dir = coll_dir1;
+	}
+	if (dir2) {
+		/* corner_in_poly reverses the direction */
+		*dir = -coll_dir2;
+	}
+
+	return true;
+
+	/*
 	for (int i = 0; i < pd1.num_segs; i++) {
 		for (int j = i + 1; j < pd1.num_segs; j++) {
 			if (solids_collide(*(seg *)(pd1.segs[i]),
@@ -539,6 +723,7 @@ bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	}
 
 	return false;
+	*/
 }
 
 /* Sets up record keeping so a solid knows which normal forces are exerted
