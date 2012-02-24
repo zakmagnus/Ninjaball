@@ -253,6 +253,8 @@ static void seg_seg_coll_dir(solid& s1, solid& s2, vector2d_t *dir) {
 
 	vector2d_t d1 = *sd1.dir;
 	vector2d_t d2 = *sd2.dir;
+	printf("figuring out collision dir between %g,%g and %g,%g\n",
+			d1.x,d1.y,d2.x,d2.y);
 	d1.normalize();
 	d2.normalize();
 	/* these are lines, not vectors; establish
@@ -310,6 +312,9 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 
 	real_t Am = (Ay1 - Ay2) / (Ax1 - Ax2);
 	real_t Bm = (By1 - By2) / (Bx1 - Bx2);
+
+	printf("Am = %g; Bm = %g\n",Am,Bm);
+
 	/* these aliases help keep names straight when arbitrary
 	 * points are needed */
 	real_t Ax = Ax1, Ay = Ay1, Bx = Bx1, By = By1;
@@ -328,33 +333,65 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 					Bymin, Bymax);
 			if (y_overlap >= 0) {
 				seg_seg_coll_dir(s1, s2, dir);
+				printf("%g,%g->%g,%g collides with %g,%g->%g,%g at %g,??\n",
+					Ax1, Ay1, Ax2, Ay2, Bx1, By1, Bx2, By2,
+					Ax1);
 				return true;
 			}
 
 			return false;
 		}
+#define VERT_SLOPE_COLL(vx,vy1,vy2,sx1,sx2,sy1,sy2,sm) do {\
+	real_t x_int = vx;\
+	if (!between((sx1), x_int, (sx2)))\
+		return false;\
+	real_t y_int = LINE_Y_COORD(x_int, sm, sx1, sy1);\
+	if (between(vy1, y_int, vy2)) {\
+		printf("%g,%g->%g,%g collides with %g,%g->%g,%g at %g,%g\n",\
+				vx, vy1, vx, vy2, sx1, sy1, sx2, sy2,\
+				x_int, y_int);\
+		seg_seg_coll_dir(s1, s2, dir);\
+		return true;\
+	}\
+	return false;\
+} while (0)
 		else {
 			/* only A is vertical */
-			real_t Bx_int = Ax1;
-			real_t By_int = LINE_Y_COORD(Bx_int, Bm, Bx, By);
-			if (between(By1, By_int, By2)) {
+			//TODO factor out, reuse below
+			VERT_SLOPE_COLL(Ax1, Ay1, Ay2, Bx1, Bx2, By1, By2, Bm);
+			/*
+			real_t x_int = Ax1;
+			if (!between(Bx1, x_int, Bx2))
+				return false;
+			real_t y_int = LINE_Y_COORD(x_int, Bm, Bx, By);
+			if (between(Ay1, y_int, Ay2)) {
+				printf("%g,%g->%g,%g collides with %g,%g->%g,%g at %g,%g\n",
+					Ax1, Ay1, Ax2, Ay2, Bx1, By1, Bx2, By2,
+					x_int, y_int);
 				seg_seg_coll_dir(s1, s2, dir);
 				return true;
 			}
 
 			return false;
+			*/
 		}
 	}
 	/* else, A is NOT vertical */
 	if (Bx1 == Bx2) {
+		VERT_SLOPE_COLL(Bx1, By1, By2, Ax1, Ax2, Ay1, Ay2, Am);
+		/*
 		real_t Ax_int = Bx1;
 		real_t Ay_int = LINE_Y_COORD(Ax_int, Am, Ax, Ay);
 		if (between(Ay1, Ay_int, Ay2)) {
+			printf("%g,%g->%g,%g collides with %g,%g->%g,%g at %g,%g\n",
+					Ax1, Ay1, Ax2, Ay2, Bx1, By1, Bx2, By2,
+					Bx1, Ay_int);
 			seg_seg_coll_dir(s1, s2, dir);
 			return true;
 		}
 
 		return false;
+		*/
 	}
 
 	/* else, no verticals. GOOD */
@@ -362,12 +399,16 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	if (Am == Bm) { /* parallels */
 		real_t Axmin = min(Ax1, Ax2);
 		real_t Bxmin = min(Bx1, Bx2);
+		//TODO huh? does this make sense??
 		real_t y1 = LINE_Y_COORD(Axmin, Bm, Bx, By);
-		real_t y2 = LINE_Y_COORD(Bxmin, Bm, Bx, By);
-		real_t y3 = LINE_Y_COORD(Axmin, Am, Ax, Ay);
+		real_t y2 = LINE_Y_COORD(Axmin, Am, Ax, Ay);
+		real_t y3 = LINE_Y_COORD(Bxmin, Bm, Bx, By);
 		real_t y4 = LINE_Y_COORD(Bxmin, Am, Ax, Ay);
 		//TODO standardize this real_t closeness
 		if (fabs(y1 - y2) <= 0.001 || fabs(y3 - y4) <= 0.001) {
+			printf("%g,%g->%g,%g collides with %g,%g->%g,%g at %g,%g or %g,%g\n",
+					Ax1, Ay1, Ax2, Ay2, Bx1, By1, Bx2, By2,
+					Axmin, y1, Bxmin, y3);
 			seg_seg_coll_dir(s1, s2, dir);
 			return true;
 		}
@@ -385,6 +426,9 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	assert(fabs(Y_int - Y_int_alt) <= 0.01);
 
 	if (between(Bx1, X_int, Bx2) && between(Ax1, X_int, Ax2)) {
+		printf("%g,%g->%g,%g collides with %g,%g->%g,%g at %g,%g\n",
+				Ax1, Ay1, Ax2, Ay2, Bx1, By1, Bx2, By2,
+				X_int, Y_int);
 		seg_seg_coll_dir(s1, s2, dir);
 		return true;
 	}
@@ -451,7 +495,8 @@ bool ball_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 /* Checks whether x, y is inside the polygon given by sd.
  * Requires that sd.segs is non-null, contains no nulls,
  * and is generally a sane polygon. */
-static bool is_in_poly(real_t x, real_t y, const poly_data_t& sd) {
+static bool is_in_poly(real_t x, real_t y, solid& poly) {
+	const poly_data_t sd = poly.solid_data->poly_data;
 	assert(sd.segs);
 	assert(*sd.segs);
 	assert(((seg *)sd.segs[0])->solid_data->seg_data.directed);
@@ -461,16 +506,46 @@ static bool is_in_poly(real_t x, real_t y, const poly_data_t& sd) {
 	real_t tmp = rot.x;
 	rot.x = -rot.y;
 	rot.y = tmp;
-	real_t cx = ((seg *)sd.segs[0])->x;
-	real_t cy = ((seg *)sd.segs[0])->y;
-	seg tester(cx, cy, rot.x, rot.y);
+	real_t cx = ((seg *)sd.segs[0])->x + rot.x;
+	real_t cy = ((seg *)sd.segs[0])->y + rot.y;
+	/* translate x,y into "polyspace" */
+	printf("translating corner %g,%g by %g,%g\n",x,y,poly.x,poly.y);
+	seg tester(cx, cy, (x - poly.x) - cx, (y - poly.y) - cy);
+	printf("tester segment is %g,%g (%g,%g)\n",tester.x,tester.y,
+			tester.solid_data->seg_data.dir->x,
+			tester.solid_data->seg_data.dir->y);
+	/*
+	printf("outpoint %g,%g was generated from %g,%g (%g,%g)\n",cx,cy,
+			((seg *)sd.segs[0])->x,((seg *)sd.segs[0])->y,
+			((seg *)sd.segs[0])->solid_data->seg_data.dir->x,
+			((seg *)sd.segs[0])->solid_data->seg_data.dir->y);
+	*/
 
 	int num_hit = 0;
 	for (int i = 0; i < sd.num_segs; i++) {
 		assert(sd.segs[i]);
-		if (solids_collide(*(seg *)sd.segs[i], tester, NULL))
+		if (solids_collide(*(seg *)sd.segs[i], tester, NULL)) {
+			/* check if the segments are parallel; if so, the
+			 * tester will pass through a corner or two and
+			 * this will give the correct hit count */
+			vector2d_t v1 = *tester.solid_data->seg_data.dir;
+			vector2d_t v2 = *((seg *)sd.segs[i])->
+				solid_data->seg_data.dir;
+			bool normed = v1.normalize();
+			assert(normed);
+			normed = v2.normalize();
+			assert(normed);
+			real_t dot = fabs(v1.dot(v2));
+			if (SIMILAR_REALS(dot, 1))
+				continue;
+
 			num_hit++;
+		}
 	}
+	printf("%d hits\n", num_hit);
+	/*TODO if the tester passes directly though a corner, it'll hit
+	 * both the corner's adjacent segments, giving an even count when
+	 * it should really be odd */
 
 	return (num_hit % 2) == 1;
 }
@@ -536,15 +611,26 @@ static seg *nearest_segment(int i1, int i2, solid& poly1, solid& poly2) {
 		vector2d_t *segdir = segi->solid_data->seg_data.dir;\
 		vector2d_t cv(x - (segi->x + poly2.x),\
 				y - (segi->y + poly2.y));\
+		printf("corner %g,%g is at %g,%g from segment %g,%g (%g,%g)\n",x,y,\
+				cv.x,cv.y,\
+				segi->x+poly2.x,segi->y+poly2.y,\
+				segdir->x,segdir->y);\
 		vector2d_t proj = (*segdir) *\
 		(cv.dot(*segdir) / segdir->dot(*segdir));\
-		vector2d_t perp = (*segdir) - proj;\
+		printf("proj of %g,%g onto %g,%g is %g,%g\n",cv.x,cv.y,\
+				segdir->x,segdir->y,proj.x,proj.y);\
+		vector2d_t perp = cv - proj;\
+		printf("corner's perp is %g,%g\n",perp.x,perp.y);\
 		real_t d = perp.norm();\
 		if ((!closest) || d < min_d) {\
 			min_d = d;\
 			closest = segi;\
 		}\
 	}\
+	printf("the closest to %g,%g is %g,%g (%g,%g) by %g\n",x,y,\
+			closest->x+poly2.x, closest->y+poly2.y,\
+			closest->solid_data->seg_data.dir->x,\
+			closest->solid_data->seg_data.dir->y, min_d);\
 } while (0)
 
 	FIND_CLOSEST(i1);
@@ -569,7 +655,7 @@ static bool corner_in_poly_dir(solid& poly1, solid& poly2, vector2d_t *buf) {
 		assert(corns.segs[i]);
 		real_t cx = ((seg *)corns.segs[i])->x + poly1.x;
 		real_t cy = ((seg *)corns.segs[i])->y + poly1.y;
-		if (is_in_poly(cx, cy, segs)) {
+		if (is_in_poly(cx, cy, poly2)) {
 			if (!buf)
 				return true;
 			/* neighbor check: see if an entire segment is
@@ -583,21 +669,29 @@ static bool corner_in_poly_dir(solid& poly1, solid& poly2, vector2d_t *buf) {
 				real_t ncy = ((seg *)corns.segs
 						[corns.num_segs - 1])->y
 						+ poly1.y;
-				if (is_in_poly(ncx, ncy, segs)) {
+				printf("CHECKING NEIGHBORCORNER:\n");
+				if (is_in_poly(ncx, ncy, poly2)) {
+					printf("HIT\n");
 					other_i = corns.num_segs - 1;
 					in_seg = (seg *)corns.segs
 						[corns.num_segs - 1];
 				}
+				else
+					printf("MISS\n");
 			}
 			if (i + 1 < corns.num_segs) {
 				real_t ncx = ((seg *)corns.segs[i + 1])->x
 					+ poly1.x;
 				real_t ncy = ((seg *)corns.segs[i + 1])->y
 					+ poly1.y;
-				if (is_in_poly(ncx, ncy, segs)) {
+				printf("CHECKING NEIGHBORCORNER:\n");
+				if (is_in_poly(ncx, ncy, poly2)) {
+					printf("HIT\n");
 					other_i = i + 1;
 					in_seg = (seg *)corns.segs[i];
 				}
+				else
+					printf("MISS\n");
 			}
 
 			seg *nearest = nearest_segment(i, other_i,
@@ -608,6 +702,7 @@ static bool corner_in_poly_dir(solid& poly1, solid& poly2, vector2d_t *buf) {
 				/*XXX nearest is not a global-coordinate
 				 * vector! seg_seg_coll_dir doesn't care,
 				 * but this is not a strict guarantee... */
+				printf("entire segment involved in poly-poly!\n");
 				seg_seg_coll_dir(*in_seg, *nearest, &coll_dir);
 			}
 			else {
@@ -654,6 +749,10 @@ bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	vector2d_t coll_dir2;
 	bool dir1 = corner_in_poly_dir(s1, s2, &coll_dir1);
 	bool dir2 = corner_in_poly_dir(s2, s1, &coll_dir2);
+	if (dir1)
+		printf("found s1's corner inside s2! d=%g,%g\n",coll_dir1.x,coll_dir1.y);
+	if (dir2)
+		printf("found s2's corner inside s1! d=%g,%g\n",coll_dir2.x,coll_dir2.y);
 	if (!(dir1 || dir2))
 		return false;
 	
@@ -798,6 +897,10 @@ void init_coll_funcs(void) {
 		ball_ball_coll;
 	coll_funcs[get_coll_func_ind(NB_SLD_RECT, NB_SLD_BALL)] =
 		rect_ball_coll;
+	coll_funcs[get_coll_func_ind(NB_SLD_SEG, NB_SLD_SEG)] =
+		seg_seg_coll;
+	coll_funcs[get_coll_func_ind(NB_SLD_POLY, NB_SLD_POLY)] =
+		poly_poly_coll;
 	//TODO segs, polys
 }
 

@@ -75,7 +75,9 @@ int main (int argc, char **argv) {
 	walls->push_back(new wall(img1, 150, -200, img1->h, img1->w));
 	walls->push_back(new wall(img1, 100 - img1->w, 300, img1->h, img1->w));
 	*/
-	walls->push_back(new polywall(100, 600, 100, 100));
+	walls->push_back(new polywall(200, 600, 100, 100));
+	
+	MOVES_PUSH(new Moveable(NULL, new poly(220, 490, 1, 3, (real_t)0, (real_t)0, (real_t)30, (real_t)-10, (real_t)15, (real_t)-30)));
 	
 	SDL_Event event;
 
@@ -155,7 +157,7 @@ int main (int argc, char **argv) {
 			moves->at(i).m->verify_onbases();
 		}
 
-		update_camera();
+		//update_camera();
 
 		SDL_FillRect(screen, NULL, 0);
 		for (j = 0; j < walls->size(); j++)

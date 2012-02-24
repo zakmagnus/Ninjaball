@@ -48,4 +48,7 @@ void render_pointer(SDL_Surface *srf, ball *b, vector2d_t& dir, SDL_Rect *camera
 
 #define LINE_Y_COORD(x,m,x0,y0) ((((x) - (x0)) * (m)) + (y0))
 
+#define REAL_EPSILON (0.001)
+#define SIMILAR_REALS(r1,r2) (fabs((r1) - (r2)) <= REAL_EPSILON)
+
 #endif
