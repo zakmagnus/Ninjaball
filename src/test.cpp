@@ -166,7 +166,7 @@ int main (int argc, char **argv) {
 			moves->at(i).m->verify_onbases();
 		}
 
-		//update_camera();
+		update_camera();
 
 		SDL_FillRect(screen, NULL, 0);
 		for (j = 0; j < walls->size(); j++)
