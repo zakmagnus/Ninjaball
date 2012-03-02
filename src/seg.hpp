@@ -10,4 +10,6 @@ class seg : public solid {
 				bool directed = false, real_t e=0.0);
 };
 
+bool point_on_segment(real_t x, real_t y, seg& segment);
+
 #endif

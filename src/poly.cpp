@@ -44,11 +44,9 @@ poly::poly(real_t x, real_t y, real_t e, int num_points, ...) {
 	/* varargs create doubles :^/ */
 	real_t prev_x = va_arg(args, double);
 	real_t prev_y = va_arg(args, double);
-	printf("polypoint %g,%g\n",prev_x,prev_y);
 	for (int i = 0; i < num_points - 1; i++) {
 		real_t x = va_arg(args, double);
 		real_t y = va_arg(args, double);
-		printf("polypoint %g,%g\n",x,y);
 		seg *s = new seg(prev_x, prev_y, x - prev_x, y - prev_y, true);
 		segs[i] = s;
 

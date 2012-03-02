@@ -1,6 +1,7 @@
 #ifndef NB_TEST_UTILS_H
 #define NB_TEST_UTILS_H
 
+#include <math.h>
 #include "SDL/SDL.h"
 #include "SDL/SDL_image.h"
 #include "physics.hpp"
@@ -9,6 +10,7 @@
 #include "rope.hpp"
 #include "ball.hpp"
 #include "rect.hpp"
+#include "seg.hpp"
 
 struct moveable_data {
 	Moveable *m;
@@ -16,15 +18,13 @@ struct moveable_data {
 	bool collided;
 };
 
-#define NB_HOOK_SPD (100.0)
+#define NB_HOOK_SPD (1800.0)
 #define NB_ROPE_MAX_LEN (600)
 
-class hook : public rect {
+class hook : public seg {
 	public:
-		hook() : rect(0, 0, 1, 1) {};
+		hook() : seg(0, 0, 1, 1, false) {};
 		void init(vector2d_t& dir);
-		real_t d;
-		vector2d_t dir;
 		bool advance(Moveable *m, real_t dt);
 };
 

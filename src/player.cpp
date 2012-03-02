@@ -135,15 +135,15 @@ void player::choose_action(vector<polywall *> *walls, real_t dt) {
 	if (hook_flying) {
 		this->rope->x1 = this->s->x;
 		this->rope->y1 = this->s->y;
-		this->rope->x2 = flyhook->x;
-		this->rope->y2 = flyhook->y;
-		this->rope->length = flyhook->d;
+		this->rope->x2 = flyhook->x +
+			flyhook->solid_data->seg_data.dir->x;
+		this->rope->y2 = flyhook->y +
+			flyhook->solid_data->seg_data.dir->y;
+		this->rope->length = flyhook->solid_data->seg_data.dir->norm();
 
 		for (int i = 0; i < walls->size(); i++) {
 			if (solids_collide(*walls->at(i), *flyhook, NULL)) {
 				hook_flying = false;
-				this->rope->x2 = this->flyhook->x;
-				this->rope->y2 = this->flyhook->y;
 				this->attach_rope();
 				break;
 			}

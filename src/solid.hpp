@@ -94,6 +94,7 @@ bool rect_ball_coll (solid& s1, solid& s2, vector2d_t *dir);
 bool ball_seg_coll (solid& s1, solid& s2, vector2d_t *dir);
 bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir);
 bool ball_poly_coll (solid& s1, solid& s2, vector2d_t *dir);
+bool seg_poly_coll (solid& s1, solid& s2, vector2d_t *dir);
 bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir);
 
 /* requires t1 <= t2 and both are solid types */

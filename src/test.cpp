@@ -57,9 +57,9 @@ int main (int argc, char **argv) {
 	Uint32 second_start;
 	unsigned frames = 0;
 
-	guyball = new ball(170, 500, img3->h / 2.0, 1.0);
+	guyball = new ball(170, 200, img3->h / 2.0, 1.0);
 	guy = new player(img3, guyball);
-	//MOVES_PUSH(guy);
+	MOVES_PUSH(guy);
 
 	/*
 	MOVES_PUSH(new Moveable(img2, new rect(150, 200, img2->h, img2->w,
@@ -75,9 +75,18 @@ int main (int argc, char **argv) {
 	walls->push_back(new wall(img1, 150, -200, img1->h, img1->w));
 	walls->push_back(new wall(img1, 100 - img1->w, 300, img1->h, img1->w));
 	*/
-	walls->push_back(new polywall(200, 600, 100, 100));
+	walls->push_back(new polywall(200, 600, 100, 500));
+	walls->push_back(new polywall(150, 100, 50, 500));
 	
-	MOVES_PUSH(new Moveable(NULL, new poly(220, 490, 1, 3, (real_t)0, (real_t)0, (real_t)30, (real_t)-10, (real_t)15, (real_t)-30)));
+	real_t sq_points[] = {0, 0, 20, 0, 20, -20, 0, -20};
+	MOVES_PUSH(new Moveable(NULL, new poly(sq_points, 4, 270, 290, 1)));
+	MOVES_PUSH(new Moveable(NULL, new poly(sq_points, 4, 290, 490, 1)));
+	real_t tri_points[] = {0, 0, 30, -10, 15, -30};
+	MOVES_PUSH(new Moveable(NULL, new poly(tri_points, 3, 200, 290, 1)));
+
+	real_t hex_points[] = {0, 0, 40, 0, 50, -20,
+		45, -40, 30, -35, -10, -10};
+	MOVES_PUSH(new Moveable(NULL, new poly(hex_points, 6, 270, 450, 1)));
 	
 	SDL_Event event;
 
@@ -175,6 +184,7 @@ int main (int argc, char **argv) {
 		if (SDL_GetTicks() - second_start >= 1000) {
 			second_start = SDL_GetTicks();
 			frames = 0;
+			//printf("****TICK****\n");
 		}
 	}
 

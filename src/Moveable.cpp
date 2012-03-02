@@ -132,7 +132,7 @@ void Moveable::move(real_t dt) {
 	this->tmp_force.y = 0;
 	apply_normal_forces();
 
-	//printf("Fy: %g, Vy: %g\n",this->total_force.y,this->physics->velocity.y);
+	//printf("%p Fy: %g, Vy: %g\n",this,this->total_force.y,this->physics->velocity.y);
 	this->s->x += this->physics->velocity.x * dt;
 	this->s->y += this->physics->velocity.y * dt;
 }
