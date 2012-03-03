@@ -80,10 +80,10 @@ int main (int argc, char **argv) {
 	walls->push_back(new poly(sloped_pts, 4, 100, 100));
 	
 	real_t sq_points[] = {0, 0, 20, 0, 20, -20, 0, -20};
-	MOVES_PUSH(new Moveable(new poly(sq_points, 4, 270, 290, 1)));
-	MOVES_PUSH(new Moveable(new poly(sq_points, 4, 290, 490, 1)));
+	//MOVES_PUSH(new Moveable(new poly(sq_points, 4, 270, 290, 1)));
+	//MOVES_PUSH(new Moveable(new poly(sq_points, 4, 290, 490, 1)));
 	real_t tri_points[] = {0, 0, 30, -10, 15, -30};
-	MOVES_PUSH(new Moveable(new poly(tri_points, 3, 200, 290, 1)));
+	//MOVES_PUSH(new Moveable(new poly(tri_points, 3, 200, 290, 1)));
 
 	real_t hex_points[] = {0, 0, 40, 0, 50, -20,
 		45, -40, 30, -35, -10, -10};
