@@ -807,8 +807,8 @@ void resolve_collision(solid& s1, solid& s2, physics_t *p1, physics_t *p2,
 	if (!immobile1) {
 		//printf("delta-c1: %g\n",new_c1-c1);
 		//printf("v1,1 = %g,%g\n",p1->velocity.x,p1->velocity.y);
-		printf("para1,1 = %g,%g[%g]\n",(dir*c1).x,(dir*c1).y,c1);
-		printf("para1,2 = %g,%g [%g <- %g]\n",para_c1.x,para_c1.y,c1+delta_c1,new_c1);
+		//printf("para1,1 = %g,%g[%g]\n",(dir*c1).x,(dir*c1).y,c1);
+		//printf("para1,2 = %g,%g [%g <- %g]\n",para_c1.x,para_c1.y,c1+delta_c1,new_c1);
 		perp_c1 = v1 - (dir * c1);
 		//printf("perp1 = %g,%g\n",perp_c1.x,perp_c1.y);
 		p1->velocity = para_c1 + perp_c1;
@@ -817,8 +817,8 @@ void resolve_collision(solid& s1, solid& s2, physics_t *p1, physics_t *p2,
 	if (!immobile2) {
 		//printf("delta-c2: %g\n",new_c2-c2);
 		//printf("v2,1 = %g,%g\n",p2->velocity.x,p2->velocity.y);
-		printf("para2,1 = %g,%g[%g]\n",(dir*c2).x,(dir*c2).y,c2);
-		printf("para2,2 = %g,%g [%g <- %g]\n",para_c2.x,para_c2.y,c2+delta_c2,new_c2);
+		//printf("para2,1 = %g,%g[%g]\n",(dir*c2).x,(dir*c2).y,c2);
+		//printf("para2,2 = %g,%g [%g <- %g]\n",para_c2.x,para_c2.y,c2+delta_c2,new_c2);
 		perp_c2 = v2 - (dir * c2);
 		p2->velocity = para_c2 + perp_c2;
 		//printf("v2,2 = %g,%g\n",p2->velocity.x,p2->velocity.y);

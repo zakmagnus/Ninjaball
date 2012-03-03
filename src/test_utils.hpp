@@ -24,7 +24,7 @@ struct moveable_data {
 class hook : public seg {
 	public:
 		hook() : seg(0, 0, 1, 1, false) {};
-		void init(vector2d_t& dir);
+		void init(Moveable *m, vector2d_t& dir);
 		bool advance(Moveable *m, real_t dt);
 };
 

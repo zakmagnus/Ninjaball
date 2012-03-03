@@ -78,18 +78,22 @@ void render_pointer(SDL_Surface *srf, ball *b, vector2d_t& dir, SDL_Rect *camera
 }
 
 //TODO move this come on
-void hook::init(vector2d_t& dir) {
+void hook::init(Moveable *m, vector2d_t& dir) {
+	this->x = m->s->x;
+	this->y = m->s->y;
 	*this->solid_data->seg_data.dir = dir;
 }
 
 bool hook::advance(Moveable *m, real_t dt) {
-	real_t d = this->solid_data->seg_data.dir->norm();
+	real_t d = vector2d_t(m->s->x - (this->x + this->solid_data->seg_data.dir->x),
+			m->s->y - (this->y + this->solid_data->seg_data.dir->y)).norm();
 	if (d >= NB_ROPE_MAX_LEN)
 		return false;
 
-	*this->solid_data->seg_data.dir = (*this->solid_data->seg_data.dir)
-		* ((d + dt * NB_HOOK_SPD) / d);
-	this->x = m->s->x;
-	this->y = m->s->y;
+	this->solid_data->seg_data.dir->normalize();
+
+	this->x = m->s->x + ((*this->solid_data->seg_data.dir) * d).x;
+	this->y = m->s->y + ((*this->solid_data->seg_data.dir) * d).y;
+	(*this->solid_data->seg_data.dir) *= dt * NB_HOOK_SPD;
 	return true;
 }

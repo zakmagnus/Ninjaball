@@ -64,7 +64,7 @@ void player::handle_input(SDL_Event& event, real_t dt) {
 					vector2d_t hookdir =
 						angle_to_dir
 						(pointer_angle);
-					flyhook->init(hookdir);
+					flyhook->init(this, hookdir);
 				}
 				break;
 		}
@@ -210,7 +210,6 @@ void player::change_rope_len(real_t dt) {
 void player::attach_rope(void) {
 	this->rope_attached = true;
 	this->rope_taut = false;
-	this->rope_state = NB_ROPE_STATE_NONE;
 	this->update_rope(); //XXX this does not set rope->x1,y1
 }
 

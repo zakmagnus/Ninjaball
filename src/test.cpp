@@ -78,6 +78,10 @@ int main (int argc, char **argv) {
 	walls->push_back(new polywall(200, 600, 100, 500));
 	real_t sloped_pts[] = {0, 0, 0, 50, 300, 50, 200, 0};
 	walls->push_back(new poly(sloped_pts, 4, 100, 100));
+
+	real_t wall1_pts[]= {0, 0, 50, 0, 50, -400, 0, -400};
+	walls->push_back(new poly(wall1_pts, 4, 500, 300));
+	walls->push_back(new poly(wall1_pts, 4, 650, 300));
 	
 	real_t sq_points[] = {0, 0, 20, 0, 20, -20, 0, -20};
 	//MOVES_PUSH(new Moveable(new poly(sq_points, 4, 270, 290, 1)));
