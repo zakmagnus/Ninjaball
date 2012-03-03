@@ -1,7 +1,7 @@
 CC=g++
-LFLAGS=-lSDL -lSDL_image -lSDL_gfx
+LFLAGS=-lSDL -lSDL_image -lSDL_gfx -g
 CFLAGS=$(LFLAGS)
-SRCS=test.cpp vector.cpp solid.cpp rect.cpp physics.cpp wall.cpp ball.cpp seg.cpp poly.cpp polywall.cpp Moveable.cpp player.cpp test_utils.cpp
+SRCS=test.cpp vector.cpp solid.cpp rect.cpp physics.cpp wall.cpp ball.cpp seg.cpp poly.cpp polywall.cpp Moveable.cpp player.cpp visible.cpp test_utils.cpp
 OBJS=$(SRCS:.cpp=.o)
 HEADERS=$(SRCS:.cpp=.hpp)
 

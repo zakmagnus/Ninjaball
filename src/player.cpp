@@ -14,7 +14,7 @@ static vector2d_t leftforce = leftvec * MOVERATE;
 
 using namespace std;
 
-player::player(SDL_Surface *img, solid *s) : Moveable(img, s) {
+player::player(SDL_Surface *img, solid *s) : Moveable(s, img) {
 	this->rope_state = NB_ROPE_STATE_NONE;
 	this->rope_taut = false;
 	this->pointer_angle = 0;
@@ -129,7 +129,7 @@ void player::update_rope(void) {
 	}
 }
 
-void player::choose_action(vector<polywall *> *walls, real_t dt) {
+void player::choose_action(vector<poly *> *walls, real_t dt) {
 	if (hook_flying)
 		hook_flying = flyhook->advance(this, dt);
 	if (hook_flying) {
@@ -236,7 +236,6 @@ void player::show(SDL_Surface *screen, SDL_Rect *camera) {
 	Moveable::show(screen, camera);
 
 	vector2d_t hookdir = angle_to_dir(this->pointer_angle);
-	//TODO camera
 	render_pointer(screen, (ball *)this->s, hookdir, camera);
 	if (this->hook_flying || this->rope_attached) {
 		render_rope(screen, *this->rope, camera);

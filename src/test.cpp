@@ -34,7 +34,7 @@ void update_camera(void);
 static SDL_Surface *screen, *img1, *img2, *img3;
 static SDL_Rect camera;
 //static vector<wall *> *walls;
-static vector<polywall *> *walls;
+static vector<poly *> *walls;
 static vector<moveable_data> *moves;
 static ball *guyball;
 static player *guy;
@@ -76,17 +76,18 @@ int main (int argc, char **argv) {
 	walls->push_back(new wall(img1, 100 - img1->w, 300, img1->h, img1->w));
 	*/
 	walls->push_back(new polywall(200, 600, 100, 500));
-	walls->push_back(new polywall(150, 100, 50, 500));
+	real_t sloped_pts[] = {0, 0, 0, 50, 300, 50, 200, 0};
+	walls->push_back(new poly(sloped_pts, 4, 100, 100));
 	
 	real_t sq_points[] = {0, 0, 20, 0, 20, -20, 0, -20};
-	MOVES_PUSH(new Moveable(NULL, new poly(sq_points, 4, 270, 290, 1)));
-	MOVES_PUSH(new Moveable(NULL, new poly(sq_points, 4, 290, 490, 1)));
+	MOVES_PUSH(new Moveable(new poly(sq_points, 4, 270, 290, 1)));
+	MOVES_PUSH(new Moveable(new poly(sq_points, 4, 290, 490, 1)));
 	real_t tri_points[] = {0, 0, 30, -10, 15, -30};
-	MOVES_PUSH(new Moveable(NULL, new poly(tri_points, 3, 200, 290, 1)));
+	MOVES_PUSH(new Moveable(new poly(tri_points, 3, 200, 290, 1)));
 
 	real_t hex_points[] = {0, 0, 40, 0, 50, -20,
 		45, -40, 30, -35, -10, -10};
-	MOVES_PUSH(new Moveable(NULL, new poly(hex_points, 6, 270, 450, 1)));
+	MOVES_PUSH(new Moveable(new poly(hex_points, 6, 270, 450, 1)));
 	
 	SDL_Event event;
 
@@ -134,7 +135,8 @@ int main (int argc, char **argv) {
 						*walls->at(j),
 						moves->at(i).m
 						->physics,
-						walls->at(j)->physics,
+						&immobile_physics,
+						//walls->at(j)->physics,
 						i, -1);
 			}
 		}
@@ -170,7 +172,8 @@ int main (int argc, char **argv) {
 
 		SDL_FillRect(screen, NULL, 0);
 		for (j = 0; j < walls->size(); j++)
-			walls->at(j)->show(screen, &camera);
+			show_visible(*walls->at(j), NULL, screen, &camera);
+			//walls->at(j)->show(screen, &camera);
 		for (i = 0; i < moves->size(); i++)
 			moves->at(i).m->show(screen, &camera);
 
@@ -250,7 +253,7 @@ int init_stuff (void) {
 		return -1;
 	}
 
-	walls = new vector<polywall *>();
+	walls = new vector<poly *>();
 	if (!walls) {
 		printf("could not allocate walls vector\n");
 		return -1;

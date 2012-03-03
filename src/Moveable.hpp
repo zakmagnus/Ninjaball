@@ -4,9 +4,10 @@
 #include "SDL/SDL.h"
 #include "physics.hpp"
 #include "solid.hpp"
+#include "visible.hpp"
 
 //TODO handle_input is too specific, it needs a more generic way to perform actions
-class Moveable {
+class Moveable : public visible {
 	protected:
 		vector2d_t total_force;
 		vector2d_t tmp_force;
@@ -17,7 +18,7 @@ class Moveable {
                 physics_t *physics;
 		solid *s;
 
-		Moveable(SDL_Surface *img, solid *s);
+		Moveable(solid *s, void *visible_data=NULL);
 
 		virtual void handle_input(SDL_Event&, real_t dt);
 		void add_force(vector2d_t& f);

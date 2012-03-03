@@ -18,4 +18,6 @@ class physics_t {
 		void apply_force(vector2d_t& force, real_t dt);
 };
 
+static physics_t immobile_physics(1, true);
+
 #endif

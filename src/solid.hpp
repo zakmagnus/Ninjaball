@@ -47,7 +47,7 @@ union solid_data_t {
 	struct poly_data_t poly_data;
 };
 
-class solid {
+class solid { //TODO shouldn't all solids have physics?
 	protected:
 		unsigned solid_type;
 	public:

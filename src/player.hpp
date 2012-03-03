@@ -35,8 +35,7 @@ class player : public Moveable {
 		player(SDL_Surface *img, solid *s);
 		virtual void handle_input(SDL_Event&, real_t dt);
 		//TODO choose_action should be a Moveable thing
-		//virtual void choose_action(vector<wall *> *walls, real_t dt);
-		virtual void choose_action(vector<polywall *> *walls, real_t dt);
+		virtual void choose_action(vector<poly *> *walls, real_t dt);
 		virtual void move(real_t dt);
 		virtual void verify_onbases(void);
 		virtual void show(SDL_Surface *screen, SDL_Rect *camera);

@@ -5,10 +5,12 @@
 #include "test_utils.hpp"
 #include "vector.hpp"
 #include "seg.hpp"
+#include "visible.hpp"
 
 using namespace std;
 
-Moveable::Moveable(SDL_Surface *img, solid *s) { //TODO mass variable
+Moveable::Moveable(solid *s, void *visible_data) : visible(visible_data) {
+	//TODO mass variable
 	this->img = img;
 	this->physics = new physics_t(1);
 	vector2d_t nullforce = vector2d_t(0, 0);
@@ -138,48 +140,7 @@ void Moveable::move(real_t dt) {
 }
 
 void Moveable::show(SDL_Surface *screen, SDL_Rect *camera) {
-	//TODO make this suck less
-	if (this->img) {
-		apply_surface(this->img, screen, this->s->left_edge(),
-				this->s->top_edge(), camera);
-	}
-	else {
-		real_t x1, x2, y1, y2;
-		seg **segs;
-		switch (this->s->get_solid_type()) {
-		case NB_SLD_POLY:
-			segs = (seg **) this->s->solid_data->poly_data.segs;
-			for (int i = 0; i < this->s->solid_data->
-					poly_data.num_segs; i++) {
-				x1 = this->s->x + segs[i]->x;
-				y1 = this->s->y + segs[i]->y;
-				if (camera) {
-					x1 -= camera->x;
-					y1 -= camera->y;
-				}
-				x2 = x1 + segs[i]->solid_data->seg_data.dir->x;
-				y2 = y1 + segs[i]->solid_data->seg_data.dir->y;
-				//TODO magic number
-				lineColor(screen, x1, y1, x2, y2, 0xFFffFFff);
-			}
-			break;
-		case NB_SLD_SEG:
-			x1 = this->s->x;
-			y1 = this->s->y;
-			if (camera) {
-				x1 -= camera->x;
-				y1 -= camera->y;
-			}
-			x2 = x1 + this->s->solid_data->seg_data.dir->x;
-			y2 = y1 + this->s->solid_data->seg_data.dir->y;
-			//TODO magic number
-			lineColor(screen, x1, y1, x2, y2, 0xFFffFFff);
-			break;
-		default:
-			break;
-		}
-		//TODO poly/seg rendering
-	}
+	show_visible(*this->s, this, screen, camera);
 }
 
 void Moveable::verify_onbases(void) {
