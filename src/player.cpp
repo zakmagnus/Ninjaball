@@ -4,9 +4,9 @@
 #include "test_utils.hpp"
 #include "vector.hpp"
 
-#define MOVERATE (150)
+#define MOVERATE (200)
 #define NB_ROPE_EXTEND_RATE (175)
-#define NB_ROPE_FORCE (220)
+#define NB_ROPE_FORCE (300)
 #define NB_POINTER_TURN_SPEED (M_PI / 2)
 
 static vector2d_t rightforce = rightvec * MOVERATE;

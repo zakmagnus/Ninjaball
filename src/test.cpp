@@ -24,7 +24,7 @@ using namespace std;
 
 static real_t frame_air_drag = pow(AIR_FRICTION, 1.0 / FRAMES_PER_SEC);
 
-static vector2d_t gravity = downvec * 90;
+static vector2d_t gravity = downvec * 150;
 
 SDL_Surface *load_img (char *);
 int init_stuff (void);
