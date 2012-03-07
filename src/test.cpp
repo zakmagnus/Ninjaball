@@ -44,6 +44,7 @@ int init_stuff (void);
 void teardown_stuff (void);
 void update_camera(void);
 void init_guy(void);
+void dead(void);
 
 static SDL_Surface *screen, *img1, *img2, *img3;
 static SDL_Rect camera;
@@ -186,13 +187,13 @@ int main (int argc, char **argv) {
 		}
 
 		if (guyball->x > SCREEN_WIDTH + WORLD_RIGHT_LIMIT)
-			init_guy();
+			dead();
 		else if (guyball->x < -WORLD_LEFT_LIMIT)
-			init_guy();
+			dead();
 		else if (guyball->y > SCREEN_HEIGHT + WORLD_BOT_LIMIT)
-			init_guy();
+			dead();
 		else if (guyball->y < -WORLD_LEFT_LIMIT)
-			init_guy();
+			dead();
 		update_camera();
 
 		SDL_FillRect(screen, NULL, 0);
@@ -272,6 +273,11 @@ void init_guy(void) {
 		player p(img3, guyball);
 		*guy = p;
 	}
+}
+
+void dead(void) {
+	//TODO
+	init_guy();
 }
 
 int init_stuff (void) {
