@@ -37,57 +37,6 @@ real_t solid::top_edge(void) {
 }
 
 #include <stdio.h>
-/* rectangle intersection */
-bool rect_rect_coll (solid& s1, solid& s2, vector2d_t *dir) {
-	assert(s1.get_solid_type() == NB_SLD_RECT);
-	assert(s2.get_solid_type() == NB_SLD_RECT);
-	struct rect_data_t& rd1 = s1.solid_data->rect_data;
-	struct rect_data_t& rd2 = s2.solid_data->rect_data;
-	real_t top1 = s1.y, top2 = s2.y, left1 = s1.x, left2 = s2.x,
-	       bot1 = s1.y + rd1.h, bot2 = s2.y + rd2.h,
-	       right1 = s1.x + rd1.w, right2 = s2.x + rd2.w;
-	if (left1 > right2)
-		return false;
-	if (top1 > bot2)
-		return false;
-	if (left2 > right1)
-		return false;
-	if (top2 > bot1)
-		return false;
-
-	if (dir) {
-		/* edge contact heuristic: the dimension with a greater overlap
-		 * is the one where the collision "really" happens */
-		/*
-		   real_t xmin = min(left1, left2);
-		   real_t xmax = max(right1, right2);
-		   real_t x_overlap = xmax - xmin - fabs(left1 - left2) - fabs(right1 - right2);
-		 */
-		real_t x_overlap = SINGLE_DIM_OVERLAP(left1, right1,
-				left2, right2);
-		/*
-		   real_t ymin = min(top1, top2);
-		   real_t ymax = max(bot1, bot2);
-		   real_t y_overlap = ymax - ymin - fabs(top1 - top2) - fabs(bot1 - bot2);
-		 */
-		real_t y_overlap = SINGLE_DIM_OVERLAP(top1, bot1, top2, bot2);
-
-		if (x_overlap > y_overlap) {
-			if (s1.y > s2.y)
-				*dir = upvec;
-			else
-				*dir = downvec;
-		}
-		else {
-			if (s1.x > s2.x)
-				*dir = leftvec;
-			else
-				*dir = rightvec;
-		}
-	}
-
-	return true;
-}
 
 bool ball_ball_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	assert(s1.get_solid_type() == NB_SLD_BALL);
@@ -106,76 +55,6 @@ bool ball_ball_coll (solid& s1, solid& s2, vector2d_t *dir) {
 
 	return true;
 }
-
-/* requires s1 is the rect and s2 is the ball 
- *
- * This function assumes an EDGE collision; one solid well inside the
- * other may fail to be detected. */
-bool rect_ball_coll (solid& s1, solid& s2, vector2d_t *dir) {
-	assert(s1.get_solid_type() == NB_SLD_RECT);
-	assert(s2.get_solid_type() == NB_SLD_BALL);
-	struct rect_data_t& rd = s1.solid_data->rect_data;
-	real_t r = s2.solid_data->ball_data.r,
-	       bx = s2.x, by = s2.y;
-	real_t top = s1.y, left = s1.x,
-	       bot = s1.y + rd.h, right = s1.x + rd.w;
-
-	if ((left < bx) && (bx < right)) {
-		if ((r > fabs(by - top)) || (r > fabs(by - bot))) {
-			if (dir) {
-				if (s1.y > s2.y)
-					*dir = upvec;
-				else
-					*dir = downvec;
-			}
-			return true;
-		}
-
-		return false;
-	}
-	if ((top < by) && (by < bot)) {
-		if ((r > fabs(bx - left)) || (r > fabs(bx - right))) {
-			if (dir) {
-				if (s1.x > s2.x)
-					*dir = leftvec;
-				else
-					*dir = rightvec;
-			}
-			return true;
-		}
-
-		return false;
-	}
-
-	real_t rsq = r * r;
-	vector2d_t d_vec;
-
-	//TODO move somewhere better ?
-#define CHECK_DVEC do {\
-	if (rsq > d_vec.x * d_vec.x + d_vec.y * d_vec.y) {\
-		if (dir) {\
-			d_vec.normalize();\
-			*dir = d_vec;\
-		}\
-		return true;\
-	}\
-} while (0)
-
-	d_vec.x = bx - left;
-	d_vec.y = by - top;
-	CHECK_DVEC;
-	d_vec.x = bx - right;
-	d_vec.y = by - top;
-	CHECK_DVEC;
-	d_vec.x = bx - left;
-	d_vec.y = by - bot;
-	CHECK_DVEC;
-	d_vec.x = bx - right;
-	d_vec.y = by - bot;
-	CHECK_DVEC;
-
-	return false;
-	}
 
 /* requires s1 is the ball and s2 is the segment */
 /* requires the seg has nonzero length */
@@ -691,12 +570,8 @@ solid::stop_being_on(list<solid::onbase_data>::iterator I) {
 /* MUST be called before collisions are used! */
 void init_coll_funcs(void) {
 	//XXX make sure to put the types in ascending order!
-	coll_funcs[get_coll_func_ind(NB_SLD_RECT, NB_SLD_RECT)] =
-		rect_rect_coll;
 	coll_funcs[get_coll_func_ind(NB_SLD_BALL, NB_SLD_BALL)] =
 		ball_ball_coll;
-	coll_funcs[get_coll_func_ind(NB_SLD_RECT, NB_SLD_BALL)] =
-		rect_ball_coll;
 	coll_funcs[get_coll_func_ind(NB_SLD_BALL, NB_SLD_SEG)] =
 		ball_seg_coll;
 	coll_funcs[get_coll_func_ind(NB_SLD_BALL, NB_SLD_POLY)] =
@@ -707,7 +582,6 @@ void init_coll_funcs(void) {
 		seg_poly_coll;
 	coll_funcs[get_coll_func_ind(NB_SLD_POLY, NB_SLD_POLY)] =
 		poly_poly_coll;
-	//TODO segs, polys
 }
 
 /* Requires dir is a direction and not a 0 vector, pointing FROM s1 INTO s2. */

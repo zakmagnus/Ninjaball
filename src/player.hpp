@@ -3,9 +3,8 @@
 
 #include "SDL/SDL.h"
 #include "physics.hpp"
-#include "wall.hpp"
-#include "polywall.hpp"
 #include "solid.hpp"
+#include "poly.hpp"
 #include "rope.hpp"
 #include "Moveable.hpp"
 #include "test_utils.hpp"

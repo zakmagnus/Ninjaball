@@ -9,7 +9,6 @@
 #include "Moveable.hpp"
 #include "rope.hpp"
 #include "ball.hpp"
-#include "rect.hpp"
 #include "seg.hpp"
 
 struct moveable_data {

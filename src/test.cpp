@@ -5,9 +5,7 @@
 #include "player.hpp"
 #include "Moveable.hpp"
 #include "solid.hpp"
-#include "wall.hpp"
 #include "ball.hpp"
-#include "polywall.hpp"
 #include "poly.hpp"
 using namespace std;
 
@@ -75,25 +73,12 @@ int main (int argc, char **argv) {
 	init_guy();
 	MOVES_PUSH(guy);
 
-	/*
-	MOVES_PUSH(new Moveable(img2, new rect(150, 200, img2->h, img2->w,
-					1.0)));
-	*/
-	/*
-	MOVES_PUSH(new Moveable(img2, new rect(150, -50, img2->h, img2->w,
-					1.0)));
-	*/
-
-	/*
-	walls->push_back(new wall(img1, 100, 600, img1->h, img1->w));
-	walls->push_back(new wall(img1, 150, -200, img1->h, img1->w));
-	walls->push_back(new wall(img1, 100 - img1->w, 300, img1->h, img1->w));
-	*/
-	walls->push_back(new polywall(200, 600, 100, 500));
+	real_t wall2_pts[] = {0, 0, 500, 0, 500, -100, 0, -100};
+	walls->push_back(new poly(wall2_pts, 4, 200, 600));
 	real_t sloped_pts[] = {0, 0, 0, 50, 300, 50, 200, 0};
 	walls->push_back(new poly(sloped_pts, 4, 100, 100));
 
-	real_t wall1_pts[]= {0, 0, 50, 0, 50, -400, 0, -400};
+	real_t wall1_pts[] = {0, 0, 50, 0, 50, -400, 0, -400};
 	walls->push_back(new poly(wall1_pts, 4, 500, 300));
 	walls->push_back(new poly(wall1_pts, 4, 650, 300));
 	

@@ -8,8 +8,7 @@
 using namespace std;
 
 enum { /* solid types */
-	NB_SLD_RECT = 0,
-	NB_SLD_BALL,
+	NB_SLD_BALL = 0,
 	NB_SLD_SEG,
 	NB_SLD_POLY,
 	NB_NUM_SLD_TYPES /* not a type, just a count */
@@ -17,10 +16,6 @@ enum { /* solid types */
 
 #define NB_NUM_COLL_FUNCS ((NB_NUM_SLD_TYPES * (NB_NUM_SLD_TYPES + 1)) / 2)
 
-struct rect_data_t {
-	real_t h;
-	real_t w;
-};
 struct ball_data_t {
 	real_t r;
 };
@@ -41,7 +36,6 @@ struct poly_data_t {
 };
 
 union solid_data_t {
-	struct rect_data_t rect_data;
 	struct ball_data_t ball_data;
 	struct seg_data_t seg_data;
 	struct poly_data_t poly_data;
@@ -88,21 +82,20 @@ typedef bool (*collision_function) (solid& s1, solid& s2, vector2d_t *dir);
 /* collision function list: one per pair of types */
 extern collision_function coll_funcs[NB_NUM_COLL_FUNCS];
 void init_coll_funcs(void);
-bool rect_rect_coll (solid& s1, solid& s2, vector2d_t *dir);
 bool ball_ball_coll (solid& s1, solid& s2, vector2d_t *dir);
-bool rect_ball_coll (solid& s1, solid& s2, vector2d_t *dir);
 bool ball_seg_coll (solid& s1, solid& s2, vector2d_t *dir);
 bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir);
 bool ball_poly_coll (solid& s1, solid& s2, vector2d_t *dir);
 bool seg_poly_coll (solid& s1, solid& s2, vector2d_t *dir);
 bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir);
 
+#include <stdio.h>
 /* requires t1 <= t2 and both are solid types */
 static unsigned get_coll_func_ind(unsigned t1, unsigned t2) {
 	assert(t1 <= t2);
 	assert(t2 < NB_NUM_SLD_TYPES);
-	unsigned base = (t1 * (t1 + 1)) / 2;
-	return base + t2;
+	unsigned base = ((2 * NB_NUM_SLD_TYPES - t1 + 1) * t1) / 2;
+	return base + t2 - t1;
 }
 
 /* requires t1 and t2 are actual solid types */
