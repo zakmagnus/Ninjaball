@@ -31,6 +31,8 @@ class player : public Moveable {
 		void remove_rope(void);
 		bool rope_attached;
 
+		bool a_on, d_on, q_on, e_on;
+
 	public:
 		player(SDL_Surface *img, solid *s);
 		virtual void handle_input(SDL_Event&, real_t dt);

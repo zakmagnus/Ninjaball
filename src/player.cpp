@@ -23,6 +23,7 @@ player::player(SDL_Surface *img, solid *s) : Moveable(s, img) {
 	this->rope_attached = false;
 	this->flyhook = new hook();
 	this->rope = new ropedata[1];
+	this->a_on = this->d_on = this->q_on = this->e_on = false;
 }
 
 void player::handle_input(SDL_Event& event, real_t dt) {
@@ -41,19 +42,27 @@ void player::handle_input(SDL_Event& event, real_t dt) {
 				break;
 			case SDLK_a: 
 			case SDLK_LEFT:
-				this->total_force += leftforce;
+				this->a_on = true;
+				//this->total_force += leftforce;
 				break;
 			case SDLK_d: 
 			case SDLK_RIGHT:
-				total_force += rightforce;
+				this->d_on = true;
+				//total_force += rightforce;
 				break;
 			case SDLK_e:
+				this->e_on = true;
+				/*
 				this->pointer_vel +=
 					NB_POINTER_TURN_SPEED;
+					*/
 				break;
 			case SDLK_q:
+				this->q_on = true;
+				/*
 				this->pointer_vel -=
 					NB_POINTER_TURN_SPEED;
+					*/
 				break;
 			case SDLK_f:
 				if (rope_attached) {
@@ -83,19 +92,27 @@ void player::handle_input(SDL_Event& event, real_t dt) {
 				break;
 			case SDLK_a: 
 			case SDLK_LEFT:
-				this->total_force += rightforce;
+				this->a_on = false;
+				//this->total_force += rightforce;
 				break;
 			case SDLK_d: 
 			case SDLK_RIGHT:
-				this->total_force += leftforce;
+				this->d_on = false;
+				//this->total_force += leftforce;
 				break;
 			case SDLK_e:
+				this->e_on = false;
+				/*
 				this->pointer_vel -=
 					NB_POINTER_TURN_SPEED;
+					*/
 				break;
 			case SDLK_q:
+				this->q_on = false;
+				/*
 				this->pointer_vel +=
 					NB_POINTER_TURN_SPEED;
+					*/
 				break;
 		}
 	}
@@ -130,6 +147,17 @@ void player::update_rope(void) {
 }
 
 void player::choose_action(vector<poly *> *walls, real_t dt) {
+	if (a_on)
+		this->add_tmp_force(leftforce);
+	if (d_on)
+		this->add_tmp_force(rightforce);
+	if (e_on)
+		this->pointer_vel = NB_POINTER_TURN_SPEED;
+	if (q_on)
+		this->pointer_vel = -NB_POINTER_TURN_SPEED;
+	if (q_on && e_on)
+		this->pointer_vel = 0;
+
 	if (hook_flying)
 		hook_flying = flyhook->advance(this, dt);
 	if (hook_flying) {
@@ -153,6 +181,7 @@ void player::choose_action(vector<poly *> *walls, real_t dt) {
 
 void player::move(real_t dt) {
 	this->pointer_angle += this->pointer_vel * dt;
+	this->pointer_vel = 0;
 	if (this->pointer_angle < 0)
 		this->pointer_angle += 2 * M_PI;
 	else if (this->pointer_angle > 2 * M_PI)

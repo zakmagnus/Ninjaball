@@ -23,6 +23,10 @@ void Moveable::add_force(vector2d_t& f) {
 	this->total_force += f;
 }
 
+void Moveable::add_tmp_force(vector2d_t& f) {
+	this->tmp_force += f;
+}
+
 //TODO wow this is stupid
 void Moveable::slow_down(real_t factor) {
 	this->physics->velocity = this->physics->velocity * factor;

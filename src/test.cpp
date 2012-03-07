@@ -16,6 +16,19 @@ using namespace std;
 #define SCREEN_BPP    32
 #define CAM_DEADZONE_H 100
 #define CAM_DEADZONE_W 150
+#define CAM_INIT_X (0)
+#define CAM_INIT_Y (0)
+#define WORLD_TOP_LIMIT 1000
+#define WORLD_BOT_LIMIT 500
+#define WORLD_LEFT_LIMIT 500
+#define WORLD_RIGHT_LIMIT 500
+#define CAM_MAX_Y (CAM_INIT_Y + WORLD_BOT_LIMIT)
+#define CAM_MIN_Y (CAM_INIT_Y - WORLD_TOP_LIMIT)
+#define CAM_MAX_X (CAM_INIT_X + WORLD_RIGHT_LIMIT)
+#define CAM_MIN_X (CAM_INIT_X - WORLD_LEFT_LIMIT)
+
+#define GUY_INIT_X (170)
+#define GUY_INIT_Y (200)
 
 #define FRAMES_PER_SEC (60)
 #define MIN_RENDER_TIME (1000 / FRAMES_PER_SEC) /* ms */
@@ -30,14 +43,15 @@ SDL_Surface *load_img (char *);
 int init_stuff (void);
 void teardown_stuff (void);
 void update_camera(void);
+void init_guy(void);
 
 static SDL_Surface *screen, *img1, *img2, *img3;
 static SDL_Rect camera;
 //static vector<wall *> *walls;
 static vector<poly *> *walls;
 static vector<moveable_data> *moves;
-static ball *guyball;
-static player *guy;
+static ball *guyball = NULL;
+static player *guy = NULL;
 
 static bool quit = false;
 
@@ -57,8 +71,7 @@ int main (int argc, char **argv) {
 	Uint32 second_start;
 	unsigned frames = 0;
 
-	guyball = new ball(170, 200, img3->h / 2.0, 1.0);
-	guy = new player(img3, guyball);
+	init_guy();
 	MOVES_PUSH(guy);
 
 	/*
@@ -96,13 +109,13 @@ int main (int argc, char **argv) {
 	SDL_Event event;
 
 	int i, j;
-	for (i = 0; i < moves->size(); i++) {
-		moves->at(i).m->add_force(gravity);
-	}
-
 	second_start = SDL_GetTicks();
 	while (!quit) {
 		render_start = SDL_GetTicks();
+
+		for (i = 0; i < moves->size(); i++) {
+			moves->at(i).m->add_tmp_force(gravity);
+		}
 
 		//TODO how about ACTUAL render time?
 		real_t dt = MIN_RENDER_TIME / 1000.0;
@@ -172,6 +185,14 @@ int main (int argc, char **argv) {
 			moves->at(i).m->verify_onbases();
 		}
 
+		if (guyball->x > SCREEN_WIDTH + WORLD_RIGHT_LIMIT)
+			init_guy();
+		else if (guyball->x < -WORLD_LEFT_LIMIT)
+			init_guy();
+		else if (guyball->y > SCREEN_HEIGHT + WORLD_BOT_LIMIT)
+			init_guy();
+		else if (guyball->y < -WORLD_LEFT_LIMIT)
+			init_guy();
 		update_camera();
 
 		SDL_FillRect(screen, NULL, 0);
@@ -226,6 +247,31 @@ void update_camera(void) {
 		camera.y = guyball->y - (SCREEN_HEIGHT / 2)
 			+ (CAM_DEADZONE_H / 2);
 	}
+	if (camera.y > CAM_MAX_Y)
+		camera.y = CAM_MAX_Y;
+	if (camera.y < CAM_MIN_Y)
+		camera.y = CAM_MIN_Y;
+	if (camera.x > CAM_MAX_X)
+		camera.x = CAM_MAX_X;
+	if (camera.x < CAM_MIN_X)
+		camera.x = CAM_MIN_X;
+}
+
+void init_guy(void) {
+	if (!guyball) {
+		guyball = new ball(GUY_INIT_X, GUY_INIT_Y, img3->h / 2.0, 1.0);
+	}
+	else {
+		guyball->x = GUY_INIT_X;
+		guyball->y = GUY_INIT_Y;
+	}
+	if (!guy) {
+		guy = new player(img3, guyball);
+	}
+	else {
+		player p(img3, guyball);
+		*guy = p;
+	}
 }
 
 int init_stuff (void) {
@@ -234,8 +280,8 @@ int init_stuff (void) {
 	screen = SDL_SetVideoMode(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_BPP,
 			SDL_SWSURFACE);
 
-	camera.x = 0;
-	camera.y = 0;
+	camera.x = CAM_INIT_X;
+	camera.y = CAM_INIT_Y;
 	camera.h = SCREEN_HEIGHT;
 	camera.w = SCREEN_WIDTH;
 
