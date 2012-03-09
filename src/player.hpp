@@ -33,7 +33,7 @@ class player : public Moveable {
 		bool a_on, d_on, q_on, e_on;
 
 	public:
-		player(SDL_Surface *img, solid *s);
+		player(solid *s);
 		virtual void handle_input(SDL_Event&, real_t dt);
 		//TODO choose_action should be a Moveable thing
 		virtual void choose_action(vector<poly *> *walls, real_t dt);

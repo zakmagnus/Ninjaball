@@ -14,7 +14,7 @@ static vector2d_t leftforce = leftvec * MOVERATE;
 
 using namespace std;
 
-player::player(SDL_Surface *img, solid *s) : Moveable(s, img) {
+player::player(solid *s) : Moveable(s) {
 	this->rope_state = NB_ROPE_STATE_NONE;
 	this->rope_taut = false;
 	this->pointer_angle = 0;

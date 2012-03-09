@@ -6,7 +6,9 @@
 
 class poly : public solid {
 	public:
-		poly(real_t *points, unsigned num_pts, real_t x=0.0, real_t y=0.0, real_t e=0.0);
+		poly(real_t *points, unsigned num_pts, real_t x=0.0,
+				real_t y=0.0, unsigned color=0xFFffFFff,
+				real_t e=0.0);
 		poly(real_t x, real_t y, real_t e, int num_points, ...);
 };
 

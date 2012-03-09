@@ -5,14 +5,9 @@
 #include <list>
 #include "vector.hpp"
 #include "physics.hpp"
+#include "solid_types.hpp"
+#include "visible.hpp"
 using namespace std;
-
-enum { /* solid types */
-	NB_SLD_BALL = 0,
-	NB_SLD_SEG,
-	NB_SLD_POLY,
-	NB_NUM_SLD_TYPES /* not a type, just a count */
-};
 
 #define NB_NUM_COLL_FUNCS ((NB_NUM_SLD_TYPES * (NB_NUM_SLD_TYPES + 1)) / 2)
 
@@ -41,7 +36,7 @@ union solid_data_t {
 	struct poly_data_t poly_data;
 };
 
-class solid { //TODO shouldn't all solids have physics?
+class solid : public visible, public physics_t {
 	protected:
 		unsigned solid_type;
 	public:

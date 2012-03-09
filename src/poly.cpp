@@ -7,7 +7,8 @@
 /* requires num_pts >= 3 */
 /* The vector FROM point i INTO point i+1 must be such that a negative rotation
  * of it points INTO the polygon. */
-poly::poly(real_t *points, unsigned num_pts, real_t x, real_t y, real_t e) : solid() {
+poly::poly(real_t *points, unsigned num_pts, real_t x, real_t y,
+		unsigned color, real_t e) : solid() {
 	assert(points);
 	assert(num_pts >= 3);
 	this->x = x;
@@ -28,6 +29,9 @@ poly::poly(real_t *points, unsigned num_pts, real_t x, real_t y, real_t e) : sol
 
 	this->solid_data->poly_data.segs = (void **) segs;
 	this->solid_data->poly_data.num_segs = num_pts;
+
+	this->visible_type = NB_SLD_POLY;
+	this->visible_data = (void *) color;
 }
 
 #include <stdio.h>

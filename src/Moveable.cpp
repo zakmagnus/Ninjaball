@@ -9,7 +9,7 @@
 
 using namespace std;
 
-Moveable::Moveable(solid *s, void *visible_data) : visible(visible_data) {
+Moveable::Moveable(solid *s) {
 	//TODO mass variable
 	this->img = img;
 	this->physics = new physics_t(1);
@@ -144,7 +144,7 @@ void Moveable::move(real_t dt) {
 }
 
 void Moveable::show(SDL_Surface *screen, SDL_Rect *camera) {
-	show_visible(*this->s, this, screen, camera);
+	show_visible(this->s, screen, camera);
 }
 
 void Moveable::verify_onbases(void) {

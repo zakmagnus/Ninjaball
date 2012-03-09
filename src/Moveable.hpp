@@ -6,8 +6,9 @@
 #include "solid.hpp"
 #include "visible.hpp"
 
+//TODO template moveable to extend *some sort* of solid, to be defined at init time
 //TODO handle_input is too specific, it needs a more generic way to perform actions
-class Moveable : public visible {
+class Moveable {
 	protected:
 		vector2d_t total_force;
 		vector2d_t tmp_force;
@@ -18,7 +19,7 @@ class Moveable : public visible {
                 physics_t *physics;
 		solid *s;
 
-		Moveable(solid *s, void *visible_data=NULL);
+		Moveable(solid *s);
 
 		virtual void handle_input(SDL_Event&, real_t dt);
 		void add_force(vector2d_t& f);

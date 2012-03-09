@@ -12,7 +12,8 @@ collision_function coll_funcs[NB_NUM_COLL_FUNCS];
  * to check for a collision and decide if it's really still on. */
 #define NB_ONCHECK_P_DIST (1.5)
 
-solid::solid(real_t x, real_t y, real_t e) {
+solid::solid(real_t x, real_t y, real_t e) : physics_t(),
+	visible(NB_NUM_VIS_TYPES) {
 	this->x = x;
 	this->y = y;
 	this->elasticity = e;

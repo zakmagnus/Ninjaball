@@ -183,8 +183,7 @@ int main (int argc, char **argv) {
 
 		SDL_FillRect(screen, NULL, 0);
 		for (j = 0; j < walls->size(); j++)
-			show_visible(*walls->at(j), NULL, screen, &camera);
-			//walls->at(j)->show(screen, &camera);
+			show_visible(walls->at(j), screen, &camera);
 		for (i = 0; i < moves->size(); i++)
 			moves->at(i).m->show(screen, &camera);
 
@@ -245,17 +244,18 @@ void update_camera(void) {
 
 void init_guy(void) {
 	if (!guyball) {
-		guyball = new ball(GUY_INIT_X, GUY_INIT_Y, img3->h / 2.0, 1.0);
+		guyball = new ball(GUY_INIT_X, GUY_INIT_Y, img3->h / 2.0,
+				img3, 1.0);
 	}
 	else {
 		guyball->x = GUY_INIT_X;
 		guyball->y = GUY_INIT_Y;
 	}
 	if (!guy) {
-		guy = new player(img3, guyball);
+		guy = new player(guyball);
 	}
 	else {
-		player p(img3, guyball);
+		player p(guyball);
 		*guy = p;
 	}
 }
