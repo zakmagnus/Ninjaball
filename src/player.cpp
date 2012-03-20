@@ -14,7 +14,7 @@ static vector2d_t leftforce = leftvec * MOVERATE;
 
 using namespace std;
 
-player::player(solid *s) : Moveable(s) {
+player::player() : Moveable() {
 	this->rope_state = NB_ROPE_STATE_NONE;
 	this->rope_taut = false;
 	this->pointer_angle = 0;
@@ -124,7 +124,7 @@ void player::update_rope(void) {
 		real_t d = ropedir.norm();
 		if (d < this->rope->length) { /* loose rope */
 			if (this->rope_taut) {
-				this->s->stop_being_on(ropepos);
+				this->stop_being_on(ropepos);
 				this->rope_taut = false;
 				//printf("rope became loose\n");
 			}
@@ -136,7 +136,7 @@ void player::update_rope(void) {
 			/*TODO the player is not really "on" the solid it's
 			 * attached to, so maybe NULL should be allowed as
 			 * an onbase? */
-			this->ropepos = this->s->become_on(s, ropedir);
+			this->ropepos = this->become_on(this, ropedir);
 			this->rope_taut = true;
 			//printf("rope became taut\n");
 		}
@@ -146,7 +146,7 @@ void player::update_rope(void) {
 	}
 }
 
-void player::choose_action(vector<poly *> *walls, real_t dt) {
+void player::choose_action(vector<solid *> *walls, real_t dt) {
 	if (a_on)
 		this->add_tmp_force(leftforce);
 	if (d_on)
@@ -161,8 +161,8 @@ void player::choose_action(vector<poly *> *walls, real_t dt) {
 	if (hook_flying)
 		hook_flying = flyhook->advance(this, dt);
 	if (hook_flying) {
-		this->rope->x1 = this->s->x;
-		this->rope->y1 = this->s->y;
+		this->rope->x1 = this->x;
+		this->rope->y1 = this->y;
 		this->rope->x2 = flyhook->x +
 			flyhook->solid_data->seg_data.dir->x;
 		this->rope->y2 = flyhook->y +
@@ -195,8 +195,8 @@ void player::move(real_t dt) {
 
 void player::change_rope_len(real_t dt) {
 	if (this->rope_attached) {
-		rope->x1 = this->s->x;
-		rope->y1 = this->s->y;
+		rope->x1 = this->x;
+		rope->y1 = this->y;
 		if (this->rope_state == NB_ROPE_STATE_EXTD) {
 			//TODO this does not give smooth movement...
 			real_t old_len = this->rope->length;
@@ -244,18 +244,18 @@ void player::attach_rope(void) {
 
 void player::remove_rope(void) {
 	if (rope_taut)
-		this->s->stop_being_on(ropepos);
+		this->stop_being_on(ropepos);
 	this->rope_attached = false;
 }
 
 void player::verify_onbases(void) {
-	list<solid::onbase_data>::iterator I = this->s->onbases->begin();
-	while (I != s->onbases->end()) {
-		if ((rope && (ropepos == I)) || is_still_on(*I, s)) {
+	list<solid::onbase_data>::iterator I = this->onbases->begin();
+	while (I != this->onbases->end()) {
+		if ((rope && (ropepos == I)) || is_still_on(*I, this)) {
 			I++;
 		}
 		else {
-			I = this->s->stop_being_on(I);
+			I = this->stop_being_on(I);
 		}
 	}
 }
@@ -264,7 +264,7 @@ void player::show(SDL_Surface *screen, SDL_Rect *camera) {
 	Moveable::show(screen, camera);
 
 	vector2d_t hookdir = angle_to_dir(this->pointer_angle);
-	render_pointer(screen, (ball *)this->s, hookdir, camera);
+	render_pointer(screen, this, hookdir, camera);
 	if (this->hook_flying || this->rope_attached) {
 		render_rope(screen, *this->rope, camera);
 	}

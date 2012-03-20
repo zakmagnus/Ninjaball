@@ -8,8 +8,6 @@
 #include "vector.hpp"
 #include "Moveable.hpp"
 #include "rope.hpp"
-#include "ball.hpp"
-#include "seg.hpp"
 
 struct moveable_data {
 	Moveable *m;
@@ -20,9 +18,9 @@ struct moveable_data {
 #define NB_HOOK_SPD (1800.0)
 #define NB_ROPE_MAX_LEN (600)
 
-class hook : public seg {
+class hook : public solid {
 	public:
-		hook() : seg(0, 0, 1, 1, false) {};
+		hook() {new_seg(this, 0, 0, 1, 1, false);};
 		void init(Moveable *m, vector2d_t& dir);
 		bool advance(Moveable *m, real_t dt);
 };
@@ -31,7 +29,7 @@ SDL_Surface *load_img (char *filename);
 void apply_surface (SDL_Surface *src, SDL_Surface *dst, int x, int y,
 		SDL_Rect *clip);
 void render_rope(SDL_Surface *srf, ropedata& rope, SDL_Rect *camera);
-void render_pointer(SDL_Surface *srf, ball *b, vector2d_t& dir, SDL_Rect *camera);
+void render_pointer(SDL_Surface *srf, solid *b, vector2d_t& dir, SDL_Rect *camera);
 
 /* mathy stuff */
 #define min(a,b) ((a)<(b)? (a) : (b))

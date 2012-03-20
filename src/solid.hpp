@@ -39,6 +39,7 @@ union solid_data_t {
 class solid : public visible, public physics_t {
 	protected:
 		unsigned solid_type;
+		void apply_normal_forces(void);
 	public:
 		struct onbase_data {
 			solid *onbase;
@@ -64,8 +65,17 @@ class solid : public visible, public physics_t {
 				list<onbase_data>::iterator I);
 		list<onbase_data>::iterator
 			stop_being_on(list<onbase_data>::iterator I);
-		virtual real_t left_edge(void);
-		virtual real_t top_edge(void);
+		virtual void verify_onbases(void);
+
+		friend solid *new_ball(solid *buf, real_t x, real_t y, real_t r,
+				SDL_Surface *img, real_t e);
+		friend solid *new_seg(solid *buf, real_t x, real_t y, real_t dx,
+				real_t dy, bool directed,
+				real_t e);
+		friend solid *new_poly(solid *buf, real_t *points, unsigned num_pts,
+				real_t x, real_t y, real_t e, unsigned color);
+		friend solid *new_poly(solid *buf, real_t x, real_t y, real_t e,
+				int num_points, ...);
 };
 
 /* Collision function: takes two solids and returns whether they're colliding.
@@ -122,6 +132,21 @@ static bool solids_collide(solid& s1, solid& s2, vector2d_t *dir) {
 void resolve_collision(solid& s1, solid& s2, physics_t *p1, physics_t *p2,
 		vector2d_t& dir);
 /* check is a solid is actually still on one of its onbases */
+//TODO make this a member function?
 bool is_still_on(solid::onbase_data& data, solid *s);
 
+//TODO move these declarations?
+solid *new_ball(solid *buf, real_t x=0.0, real_t y=0.0, real_t r=0.0,
+		SDL_Surface *img=NULL, real_t e=0.0);
+solid *new_seg(solid *buf, real_t x=0.0, real_t y=0.0, real_t dx=1.0,
+		real_t dy=1.0, bool directed=false,
+		real_t e=0.0);
+solid *new_poly(solid *buf, real_t *points, unsigned num_pts,
+		real_t x=0.0, real_t y=0.0, real_t e=0.0,
+		unsigned color=0xFFffFFff);
+solid *new_poly(solid *buf, real_t x, real_t y, real_t e,
+		int num_points, ...);
+
+//TODO move this
+bool point_on_segment(real_t x, real_t y, solid& segment);
 #endif

@@ -62,7 +62,7 @@ void render_rope(SDL_Surface *srf, ropedata& rope, SDL_Rect *camera) {
 	lineColor(srf, x1, y1, x2, y2, color);
 }
 
-void render_pointer(SDL_Surface *srf, ball *b, vector2d_t& dir, SDL_Rect *camera) {
+void render_pointer(SDL_Surface *srf, solid *b, vector2d_t& dir, SDL_Rect *camera) {
 	vector2d_t endpt;
 	endpt.x = b->x;
 	endpt.y = b->y;
@@ -79,21 +79,21 @@ void render_pointer(SDL_Surface *srf, ball *b, vector2d_t& dir, SDL_Rect *camera
 
 //TODO move this come on
 void hook::init(Moveable *m, vector2d_t& dir) {
-	this->x = m->s->x;
-	this->y = m->s->y;
+	this->x = m->x;
+	this->y = m->y;
 	*this->solid_data->seg_data.dir = dir;
 }
 
 bool hook::advance(Moveable *m, real_t dt) {
-	real_t d = vector2d_t(m->s->x - (this->x + this->solid_data->seg_data.dir->x),
-			m->s->y - (this->y + this->solid_data->seg_data.dir->y)).norm();
+	real_t d = vector2d_t(m->x - (this->x + this->solid_data->seg_data.dir->x),
+			m->y - (this->y + this->solid_data->seg_data.dir->y)).norm();
 	if (d >= NB_ROPE_MAX_LEN)
 		return false;
 
 	this->solid_data->seg_data.dir->normalize();
 
-	this->x = m->s->x + ((*this->solid_data->seg_data.dir) * d).x;
-	this->y = m->s->y + ((*this->solid_data->seg_data.dir) * d).y;
+	this->x = m->x + ((*this->solid_data->seg_data.dir) * d).x;
+	this->y = m->y + ((*this->solid_data->seg_data.dir) * d).y;
 	(*this->solid_data->seg_data.dir) *= dt * NB_HOOK_SPD;
 	return true;
 }

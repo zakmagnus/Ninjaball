@@ -1,7 +1,9 @@
 #include <math.h>
+#include <vector>
 #include "solid.hpp"
-#include "seg.hpp"
 #include "test_utils.hpp"
+
+using namespace std;
 
 collision_function coll_funcs[NB_NUM_COLL_FUNCS];
 
@@ -27,14 +29,6 @@ solid::solid(real_t x, real_t y, real_t e) : physics_t(),
 
 unsigned solid::get_solid_type(void) {
 	return this->solid_type;
-}
-
-real_t solid::left_edge(void) {
-	return this->x;
-}
-
-real_t solid::top_edge(void) {
-	return this->y;
 }
 
 #include <stdio.h>
@@ -307,14 +301,14 @@ bool ball_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 
 	const struct poly_data_t& pd = s2.solid_data->poly_data;
 
-#define SEG_PTR(i) ((seg *)(pd.segs[(i)]))
+#define SEG_PTR(i) ((solid *)(pd.segs[(i)]))
 #define GET_GLOBAL_SEG(i) do {\
 	assert(SEG_PTR((i)));\
 	global_seg = *SEG_PTR((i));\
 	global_seg.x += s2.x;\
 	global_seg.y += s2.y;\
 } while (0)
-	seg global_seg; /* global coordinates, not poly-centric ones */
+	solid global_seg; /* global coordinates, not poly-centric ones */
 	for (int i = 0; i < pd.num_segs; i++) {
 		assert(pd.segs);
 		GET_GLOBAL_SEG(i);
@@ -335,7 +329,7 @@ bool seg_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	const struct poly_data_t& pd = s2.solid_data->poly_data;
 
 	//TODO duplicated macro? ok something is wrong here
-#define SEG_PTR(i) ((seg *)(pd.segs[(i)]))
+#define SEG_PTR(i) ((solid *)(pd.segs[(i)]))
 #define GET_GLOBAL_SEG(i) do {\
 	assert(SEG_PTR((i)));\
 	global_seg = *SEG_PTR((i));\
@@ -343,7 +337,7 @@ bool seg_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	global_seg.y += s2.y;\
 } while (0)
 	for (int i = 0; i < pd.num_segs; i++) {
-		seg global_seg;
+		solid global_seg;
 		GET_GLOBAL_SEG(i);
 		if (solids_collide(s1, global_seg, dir))
 			return true;
@@ -359,19 +353,20 @@ static bool is_in_poly(real_t x, real_t y, solid& poly) {
 	const poly_data_t sd = poly.solid_data->poly_data;
 	assert(sd.segs);
 	assert(*sd.segs);
-	assert(((seg *)sd.segs[0])->solid_data->seg_data.directed);
+	assert(((solid *)sd.segs[0])->solid_data->seg_data.directed);
 
-	vector2d_t rot = *((seg *)sd.segs[0])->solid_data->seg_data.dir;
+	vector2d_t rot = *((solid *)sd.segs[0])->solid_data->seg_data.dir;
 	/* pi/2 rotation; should be AWAY from the polygon */
 	real_t tmp = rot.x;
 	rot.x = -rot.y;
 	rot.y = tmp;
-	real_t cx = ((seg *)sd.segs[0])->x + rot.x;
-	real_t cy = ((seg *)sd.segs[0])->y + rot.y;
+	real_t cx = ((solid *)sd.segs[0])->x + rot.x;
+	real_t cy = ((solid *)sd.segs[0])->y + rot.y;
 	/* translate x,y into "polyspace" */
 	real_t poly_x = x - poly.x;
 	real_t poly_y = y - poly.y;
-	seg tester(cx, cy, poly_x - cx, poly_y - cy);
+	solid tester;
+	new_seg(&tester, cx, cy, poly_x - cx, poly_y - cy);
 	printf("tester segment is %g,%g (%g,%g)\n",tester.x,tester.y,
 			tester.solid_data->seg_data.dir->x,
 			tester.solid_data->seg_data.dir->y);
@@ -380,18 +375,18 @@ static bool is_in_poly(real_t x, real_t y, solid& poly) {
 	int num_corners = 0;
 	for (int i = 0; i < sd.num_segs; i++) {
 		assert(sd.segs[i]);
-		if (point_on_segment(poly_x, poly_y, *(seg *)sd.segs[i]))
+		if (point_on_segment(poly_x, poly_y, *(solid *)sd.segs[i]))
 			return true;
-		if (solids_collide(*(seg *)sd.segs[i], tester, NULL)) {
-			if (point_on_segment(((seg *)sd.segs[i])->x,
-						((seg *)sd.segs[i])->y, tester))
+		if (solids_collide(*(solid *)sd.segs[i], tester, NULL)) {
+			if (point_on_segment(((solid *)sd.segs[i])->x,
+						((solid *)sd.segs[i])->y, tester))
 				num_corners++;
 			/* check if the segments are parallel; if so, the
 			 * tester will pass through a corner or two and
 			 * this will give the correct hit count */
 			/*
 			vector2d_t v1 = *tester.solid_data->seg_data.dir;
-			vector2d_t v2 = *((seg *)sd.segs[i])->
+			vector2d_t v2 = *((solid *)sd.segs[i])->
 				solid_data->seg_data.dir;
 			bool normed = v1.normalize();
 			assert(normed);
@@ -418,8 +413,8 @@ static void project_poly(solid& poly, vector2d_t& axis, real_t& min,
 		real_t& max) {
 	const struct poly_data_t& pd = poly.solid_data->poly_data;
 	for (int i = 0; i < pd.num_segs; i++) {
-		vector2d_t point(((seg *)pd.segs[i])->x + poly.x,
-				((seg *)pd.segs[i])->y + poly.y);
+		vector2d_t point(((solid *)pd.segs[i])->x + poly.x,
+				((solid *)pd.segs[i])->y + poly.y);
 		real_t proj = point.dot(axis);
 		if ((i == 0) || proj < min)
 			min = proj;
@@ -442,7 +437,7 @@ bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	real_t min_overlap;
 	vector2d_t min_axis;
 	for (int i = 0; i < pd1.num_segs; i++) {
-		vector2d_t axis = *((seg *)pd1.segs[i])->solid_data->seg_data.dir;
+		vector2d_t axis = *((solid *)pd1.segs[i])->solid_data->seg_data.dir;
 		//TODO factor this out!
 		real_t tmp = axis.x;
 		axis.x = -axis.y;
@@ -471,7 +466,7 @@ bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	}
 	//TODO factor out obviously
 	for (int i = 0; i < pd2.num_segs; i++) {
-		vector2d_t axis = *((seg *)pd2.segs[i])->solid_data->seg_data.dir;
+		vector2d_t axis = *((solid *)pd2.segs[i])->solid_data->seg_data.dir;
 		real_t tmp = axis.x;
 		axis.x = -axis.y;
 		axis.y = tmp;
@@ -503,6 +498,114 @@ bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 		*dir = min_axis;
 	
 	return true;
+}
+
+void solid::verify_onbases(void) {
+	list<solid::onbase_data>::iterator I = this->onbases->begin();
+	while (I != this->onbases->end()) {
+		if (!is_still_on(*I, this)) {
+			I = this->stop_being_on(I);
+		}
+		else {
+			I++;
+		}
+	}
+}
+
+//TODO move!!
+struct ang_range {
+	real_t start_ang;
+	real_t end_ang;
+};
+/* requires the normals in the onbase_data are normalized direction vectors */
+void solid::apply_normal_forces(void) {
+	vector2d_t& v = this->velocity;
+	//printf("starting v is %g,%g\n",v.x,v.y);
+
+	if (v.x == 0 && v.y == 0)
+		return;
+
+	vector<ang_range> deadzones;
+	list<solid::onbase_data>::iterator I, J;
+	for (I = this->onbases->begin(); I != this->onbases->end(); I++) {
+		real_t ang1 = dir_to_angle(-(*I).normal);
+		J = I;
+		J++;
+		for (; J != this->onbases->end(); J++) {
+			if ((*I).normal.x == -(*J).normal.x &&
+					(*I).normal.y == -(*J).normal.y)
+				continue;
+			real_t ang2 = dir_to_angle(-(*J).normal);
+			ang_range range;
+			range.start_ang = ang1;
+			range.end_ang = ang2;
+			if (ang1 < ang2) {
+				if (ang2 - ang1 > M_PI) {
+					range.start_ang = ang2;
+					range.end_ang = ang1;
+				}
+			}
+			else {
+				if (ang1 - ang2 <= M_PI) {
+					range.start_ang = ang2;
+					range.end_ang = ang1;
+				}
+			}
+			//TODO find min-dist order
+			deadzones.push_back(range);
+			/*
+			printf("deadzone: %g,%g[%g] to %g,%g[%g]\n",-(*I).normal.x,
+			-(*I).normal.y, ang1,-(*J).normal.x, -(*J).normal.y,ang2);
+			*/
+		}
+	}
+
+	real_t v_ang = dir_to_angle(v / v.norm());
+
+	/* check deadzones: here, v will get reduced to 0 */
+	if (!deadzones.empty()) {
+		for (int i = 0; i < deadzones.size(); i++) {
+			//printf("%g in [%g, %g]?\n",v_ang,deadzones[i].start_ang,deadzones[i].end_ang);
+			if (deadzones[i].end_ang < deadzones[i].start_ang) {
+				if (v_ang <= deadzones[i].end_ang ||
+						v_ang >= deadzones[i].start_ang) {
+					v.x = 0;
+					v.y = 0;
+					//printf("deadzoned\n");
+					return;
+				}
+			}
+			else {
+				if (v_ang <= deadzones[i].end_ang &&
+						v_ang >= deadzones[i].start_ang) {
+					v.x = 0;
+					v.y = 0;
+					//printf("deadzoned\n");
+					return;
+				}
+			}
+		}
+	}
+
+	for (I = this->onbases->begin(); I != this->onbases->end(); I++) {
+		vector2d_t& normal = (*I).normal;
+
+		real_t para = v.dot(normal);
+
+		//printf("oldv: %g,%g\n",v.x,v.y);
+		//printf("projection onto normal vector %g,%g is %g\n",
+				//normal.x,normal.y,para);
+
+		if (para < 0) { /* moving towards the onbase */
+			v -= (normal * para); /* set v to perp component */
+			vector2d_t p = normal * para;
+			//printf("removed %g,%g [%g]\n",p.x,p.y,para);
+		}
+	}
+	/*
+	printf("ending v is %g,%g\n",physics->velocity.x,
+	physics->velocity.y);
+	*/
 }
 
 /* Sets up record keeping so a solid knows which normal forces are exerted
@@ -726,4 +829,134 @@ bool is_still_on(solid::onbase_data& data, solid *s) {
 	s->x = old_x;
 	s->y = old_y;
 	return ret;
+}
+
+//TODO move these initializers
+solid *new_ball(solid *buf, real_t x, real_t y, real_t r, SDL_Surface *img, real_t e) {
+	assert(r >= 0.0);
+	solid *ret = buf;
+	if (!ret) {
+		ret = new solid(x, y, e);
+	}
+	else {
+		solid tmp = solid(x, y, e);
+		*ret = tmp;
+	}
+	ret->solid_type = NB_SLD_BALL;
+	ret->solid_data->ball_data.r = r;
+
+	ret->visible_type = NB_SLD_BALL;
+	ret->visible_data = img;
+	return ret;
+}
+
+solid *new_seg(solid *buf, real_t x, real_t y, real_t dx, real_t dy, bool directed,
+		real_t e) {
+	assert(dx != 0 || dy != 0);
+	solid *ret = buf;
+	if (!ret) {
+		ret = new solid(x, y, e);
+	}
+	else {
+		solid tmp = solid(x, y, e);
+		*ret = tmp;
+	}
+	ret->solid_type = NB_SLD_SEG;
+	vector2d_t *dir = new vector2d_t(dx, dy);
+	ret->solid_data->seg_data.dir = dir;
+	ret->solid_data->seg_data.directed = directed;
+
+	return ret;
+}
+
+solid *new_poly(solid *buf, real_t *points, unsigned num_pts, real_t x, real_t y,
+		real_t e, unsigned color) {
+	assert(points);
+	assert(num_pts >= 3);
+	solid *ret = buf;
+	if (!ret) {
+		ret = new solid();
+	}
+	else {
+		solid tmp = solid();
+		*ret = tmp;
+	}
+	ret->x = x;
+	ret->y = y;
+	ret->elasticity = e;
+	ret->solid_type = NB_SLD_POLY;
+
+#define X_COORD(i) (points[(2 * (i))])
+#define Y_COORD(i) (points[(2 * (i)) + 1])
+	solid **segs = new solid *[num_pts];
+	for (int i = 0; i < num_pts; i++) {
+		int next_i = (i + 1) % num_pts;
+		solid *segment = new_seg(NULL, X_COORD(i), Y_COORD(i),
+				X_COORD(next_i) - X_COORD(i),
+				Y_COORD(next_i) - Y_COORD(i), true);
+		segs[i] = segment;
+	}
+
+	ret->solid_data->poly_data.segs = (void **) segs;
+	ret->solid_data->poly_data.num_segs = num_pts;
+
+	ret->visible_type = NB_SLD_POLY;
+	ret->visible_data = (void *) color;
+
+	return ret;
+}
+
+solid *new_poly(solid *buf, real_t x, real_t y, real_t e, int num_points, ...) {
+	assert(num_points >= 3);
+	solid *ret = buf;
+	if (!ret) {
+		ret = new solid();
+	}
+	else {
+		solid tmp = solid();
+		*ret = tmp;
+	}
+	ret->x = x;
+	ret->y = y;
+	ret->elasticity = e;
+	ret->solid_type = NB_SLD_POLY;
+
+	solid **segs = new solid *[num_points];
+	va_list args;
+	va_start(args, num_points);
+	/* varargs create doubles :^/ */
+	real_t prev_x = va_arg(args, double);
+	real_t prev_y = va_arg(args, double);
+	for (int i = 0; i < num_points - 1; i++) {
+		real_t x = va_arg(args, double);
+		real_t y = va_arg(args, double);
+		solid *s = new_seg(NULL, prev_x, prev_y, x - prev_x, y - prev_y, true);
+		segs[i] = s;
+
+		prev_x = x;
+		prev_y = y;
+	}
+	va_end(args);
+	segs[num_points - 1] = new_seg(NULL, prev_x, prev_y, segs[0]->x - prev_x,
+			segs[0]->y - prev_y);
+	ret->solid_data->poly_data.segs = (void **) segs;
+	ret->solid_data->poly_data.num_segs = num_points;
+
+	return ret;
+}
+
+//TODO move this
+bool point_on_segment(real_t x, real_t y, solid& segment) {
+	seg_data_t& sd = segment.solid_data->seg_data;
+	real_t x1 = segment.x, y1 = segment.y;
+	real_t x2 = x1 + sd.dir->x, y2 = y1 + sd.dir->y;
+	real_t m = (y1 - y2) / (x1 - x2);
+
+	if (x1 == x2) { /* vertical */
+		//XXX should it be SIMILAR_REALS(x, x1)?
+		return ((x == x1) && between(y1, y, y2));
+	}
+
+	real_t y_coord = LINE_Y_COORD(x, m, x1, y1);
+	return between(y1, y_coord, y2) && SIMILAR_REALS(y_coord, y);
 }

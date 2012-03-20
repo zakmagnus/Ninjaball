@@ -5,8 +5,6 @@
 #include "player.hpp"
 #include "Moveable.hpp"
 #include "solid.hpp"
-#include "ball.hpp"
-#include "poly.hpp"
 using namespace std;
 
 #define SCREEN_WIDTH  800
@@ -46,10 +44,8 @@ void dead(void);
 
 static SDL_Surface *screen, *img1, *img2, *img3;
 static SDL_Rect camera;
-//static vector<wall *> *walls;
-static vector<poly *> *walls;
+static vector<solid *> *walls;
 static vector<moveable_data> *moves;
-static ball *guyball = NULL;
 static player *guy = NULL;
 
 static bool quit = false;
@@ -74,23 +70,23 @@ int main (int argc, char **argv) {
 	MOVES_PUSH(guy);
 
 	real_t wall2_pts[] = {0, 0, 500, 0, 500, -100, 0, -100};
-	walls->push_back(new poly(wall2_pts, 4, 200, 600));
+	walls->push_back(new_poly(NULL, wall2_pts, 4, 200, 600));
 	real_t sloped_pts[] = {0, 0, 0, 50, 300, 50, 200, 0};
-	walls->push_back(new poly(sloped_pts, 4, 100, 100));
+	walls->push_back(new_poly(NULL, sloped_pts, 4, 100, 100));
 
 	real_t wall1_pts[] = {0, 0, 50, 0, 50, -400, 0, -400};
-	walls->push_back(new poly(wall1_pts, 4, 500, 300));
-	walls->push_back(new poly(wall1_pts, 4, 650, 300));
+	walls->push_back(new_poly(NULL, wall1_pts, 4, 500, 300));
+	walls->push_back(new_poly(NULL, wall1_pts, 4, 650, 300));
 	
 	real_t sq_points[] = {0, 0, 20, 0, 20, -20, 0, -20};
-	//MOVES_PUSH(new Moveable(new poly(sq_points, 4, 270, 290, 1)));
-	//MOVES_PUSH(new Moveable(new poly(sq_points, 4, 290, 490, 1)));
+	//MOVES_PUSH(new Moveable(new_poly(NULL, sq_points, 4, 270, 290, 1)));
+	//MOVES_PUSH(new Moveable(new_poly(NULL, sq_points, 4, 290, 490, 1)));
 	real_t tri_points[] = {0, 0, 30, -10, 15, -30};
-	//MOVES_PUSH(new Moveable(new poly(tri_points, 3, 200, 290, 1)));
+	//MOVES_PUSH(new Moveable(new_poly(NULL, tri_points, 3, 200, 290, 1)));
 
 	real_t hex_points[] = {0, 0, 40, 0, 50, -20,
 		45, -40, 30, -35, -10, -10};
-	MOVES_PUSH(new Moveable(new poly(hex_points, 6, 270, 450, 1)));
+	MOVES_PUSH((Moveable *)new_poly(new Moveable(), hex_points, 6, 170, 50, 1));
 	
 	SDL_Event event;
 
@@ -129,15 +125,14 @@ int main (int argc, char **argv) {
 } while (0)
 		for (i = 0; i < moves->size(); i++) {
 			moves->at(i).m->slow_down(frame_air_drag);
-			moves->at(i).old_x = moves->at(i).m->s->x;
-			moves->at(i).old_y = moves->at(i).m->s->y;
+			moves->at(i).old_x = moves->at(i).m->x;
+			moves->at(i).old_y = moves->at(i).m->y;
 			moves->at(i).m->move(dt);
 			/* moveable-wall collisions */
 			for (j = 0; j < walls->size(); j++) {
-				CHECK_COLLISION(*moves->at(i).m->s,
+				CHECK_COLLISION(*moves->at(i).m,
 						*walls->at(j),
-						moves->at(i).m
-						->physics,
+						moves->at(i).m,
 						&immobile_physics,
 						//walls->at(j)->physics,
 						i, -1);
@@ -146,12 +141,10 @@ int main (int argc, char **argv) {
 		/* moveable-moveable collisions */
 		for (i = 0; i < moves->size(); i++) {
 			for (j = i + 1; j < moves->size(); j++) {
-				CHECK_COLLISION(*moves->at(i).m->s,
-						*moves->at(j).m->s,
-						moves->at(i).m
-						->physics,
-						moves->at(j).m
-						->physics,
+				CHECK_COLLISION(*moves->at(i).m,
+						*moves->at(j).m,
+						moves->at(i).m,
+						moves->at(j).m,
 						i, j);
 			}
 
@@ -161,8 +154,8 @@ int main (int argc, char **argv) {
 				moves->at(i).m->s->x,moves->at(i).m->s->y,
 				moves->at(i).old_x,moves->at(i).old_y);
 				*/
-				moves->at(i).m->s->x = moves->at(i).old_x;
-				moves->at(i).m->s->y = moves->at(i).old_y;
+				moves->at(i).m->x = moves->at(i).old_x;
+				moves->at(i).m->y = moves->at(i).old_y;
 				moves->at(i).collided = false;
 			}
 		}
@@ -171,13 +164,13 @@ int main (int argc, char **argv) {
 			moves->at(i).m->verify_onbases();
 		}
 
-		if (guyball->x > SCREEN_WIDTH + WORLD_RIGHT_LIMIT)
+		if (guy->x > SCREEN_WIDTH + WORLD_RIGHT_LIMIT)
 			dead();
-		else if (guyball->x < -WORLD_LEFT_LIMIT)
+		else if (guy->x < -WORLD_LEFT_LIMIT)
 			dead();
-		else if (guyball->y > SCREEN_HEIGHT + WORLD_BOT_LIMIT)
+		else if (guy->y > SCREEN_HEIGHT + WORLD_BOT_LIMIT)
 			dead();
-		else if (guyball->y < -WORLD_LEFT_LIMIT)
+		else if (guy->y < -WORLD_LEFT_LIMIT)
 			dead();
 		update_camera();
 
@@ -215,21 +208,21 @@ void update_camera(void) {
 	real_t dz_left = center_x - (CAM_DEADZONE_W / 2);
 	real_t dz_right = center_x + (CAM_DEADZONE_W / 2);
 
-	if (guyball->x > dz_right) {
-		camera.x = guyball->x - (SCREEN_WIDTH / 2)
+	if (guy->x > dz_right) {
+		camera.x = guy->x - (SCREEN_WIDTH / 2)
 			- (CAM_DEADZONE_W / 2);
 	}
-	else if (guyball->x < dz_left) {
-		camera.x = guyball->x - (SCREEN_WIDTH / 2)
+	else if (guy->x < dz_left) {
+		camera.x = guy->x - (SCREEN_WIDTH / 2)
 			+ (CAM_DEADZONE_W / 2);
 	}
 
-	if (guyball->y > dz_bot) {
-		camera.y = guyball->y - (SCREEN_HEIGHT / 2)
+	if (guy->y > dz_bot) {
+		camera.y = guy->y - (SCREEN_HEIGHT / 2)
 			- (CAM_DEADZONE_H / 2);
 	}
-	else if (guyball->y < dz_top) {
-		camera.y = guyball->y - (SCREEN_HEIGHT / 2)
+	else if (guy->y < dz_top) {
+		camera.y = guy->y - (SCREEN_HEIGHT / 2)
 			+ (CAM_DEADZONE_H / 2);
 	}
 	if (camera.y > CAM_MAX_Y)
@@ -243,21 +236,11 @@ void update_camera(void) {
 }
 
 void init_guy(void) {
-	if (!guyball) {
-		guyball = new ball(GUY_INIT_X, GUY_INIT_Y, img3->h / 2.0,
-				img3, 1.0);
-	}
-	else {
-		guyball->x = GUY_INIT_X;
-		guyball->y = GUY_INIT_Y;
-	}
-	if (!guy) {
-		guy = new player(guyball);
-	}
-	else {
-		player p(guyball);
-		*guy = p;
-	}
+	if (guy)
+		delete guy;
+
+	guy = (player *)new_ball(new player(), GUY_INIT_X, GUY_INIT_Y,
+			img3->h / 2.0, img3, 1.0);
 }
 
 void dead(void) {
@@ -294,7 +277,7 @@ int init_stuff (void) {
 		return -1;
 	}
 
-	walls = new vector<poly *>();
+	walls = new vector<solid *>();
 	if (!walls) {
 		printf("could not allocate walls vector\n");
 		return -1;

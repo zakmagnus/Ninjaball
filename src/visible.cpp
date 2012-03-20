@@ -4,7 +4,6 @@
 #include "solid.hpp"
 #include "test_utils.hpp"
 #include "vector.hpp"
-#include "seg.hpp"
 
 visible::visible(int type, void *data) {
 	this->visible_type = type;
@@ -15,20 +14,22 @@ void show_visible(visible *v, SDL_Surface *screen, SDL_Rect *camera) {
 	int type = v->visible_type;
 	//TODO is there any way to not have to declare all this crap out here
 	real_t x1, x2, y1, y2;
-	seg **segs;
+	solid **segs;
 	SDL_Surface *img;
 	struct ball_data_t *bd;
 	solid *s = NULL;
 	if (type >= 0 && type < NB_NUM_SLD_TYPES)
 		s = (solid *) v;
+	//printf("visible type %d\n", type);
 	switch (type) {
 		case NB_SLD_BALL:
 			img = (SDL_Surface *) v->visible_data;
 			bd = &s->solid_data->ball_data;
 			apply_surface(img, screen, s->x - bd->r, s->y - bd->r, camera);
+			//printf("drew a sprite\n");
 			break;
 		case NB_SLD_POLY:
-			segs = (seg **) s->solid_data->poly_data.segs;
+			segs = (solid **) s->solid_data->poly_data.segs;
 			for (int i = 0; i < s->solid_data->poly_data.num_segs; i++) {
 				x1 = s->x + segs[i]->x;
 				y1 = s->y + segs[i]->y;
@@ -41,6 +42,7 @@ void show_visible(visible *v, SDL_Surface *screen, SDL_Rect *camera) {
 				//TODO cast better?
 				lineColor(screen, x1, y1, x2, y2,
 						(unsigned long) v->visible_data);
+				//printf("drew seg %d colored %x\n", i, v->visible_data);
 			}
 			break;
 		case NB_SLD_SEG:
@@ -55,6 +57,7 @@ void show_visible(visible *v, SDL_Surface *screen, SDL_Rect *camera) {
 			//TODO cast better?
 			lineColor(screen, x1, y1, x2, y2,
 					(unsigned long) v->visible_data);
+			//printf("drew a seg\n");
 			break;
 		case NB_NUM_VIS_TYPES:
 			printf("abstract visible attempting to get shown!\n");

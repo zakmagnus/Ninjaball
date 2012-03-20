@@ -4,7 +4,6 @@
 #include "SDL/SDL.h"
 #include "physics.hpp"
 #include "solid.hpp"
-#include "poly.hpp"
 #include "rope.hpp"
 #include "Moveable.hpp"
 #include "test_utils.hpp"
@@ -33,10 +32,10 @@ class player : public Moveable {
 		bool a_on, d_on, q_on, e_on;
 
 	public:
-		player(solid *s);
+		player();
 		virtual void handle_input(SDL_Event&, real_t dt);
 		//TODO choose_action should be a Moveable thing
-		virtual void choose_action(vector<poly *> *walls, real_t dt);
+		virtual void choose_action(vector<solid *> *walls, real_t dt);
 		virtual void move(real_t dt);
 		virtual void verify_onbases(void);
 		virtual void show(SDL_Surface *screen, SDL_Rect *camera);

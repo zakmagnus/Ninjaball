@@ -13,7 +13,7 @@ class physics_t {
 		vector2d_t velocity;
 		bool immobile;
 
-		physics_t(mass_t mass=0, bool immobile=false,
+		physics_t(mass_t mass=1, bool immobile=false,
 				vector2d_t& velocity=default_vel);
 		void apply_force(vector2d_t& force, real_t dt);
 };
