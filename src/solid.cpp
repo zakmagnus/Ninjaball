@@ -14,7 +14,8 @@ collision_function coll_funcs[NB_NUM_COLL_FUNCS];
  * to check for a collision and decide if it's really still on. */
 #define NB_ONCHECK_P_DIST (1.5)
 
-solid::solid(real_t x, real_t y, real_t e) : physics_t(),
+solid::solid(real_t x, real_t y, real_t e, bool immobile, mass_t mass)
+	: physics_t(mass, immobile),
 	visible(NB_NUM_VIS_TYPES) {
 	this->x = x;
 	this->y = y;
@@ -366,7 +367,7 @@ static bool is_in_poly(real_t x, real_t y, solid& poly) {
 	real_t poly_x = x - poly.x;
 	real_t poly_y = y - poly.y;
 	solid tester;
-	new_seg(&tester, cx, cy, poly_x - cx, poly_y - cy);
+	new_seg(&tester, true, cx, cy, poly_x - cx, poly_y - cy);
 	printf("tester segment is %g,%g (%g,%g)\n",tester.x,tester.y,
 			tester.solid_data->seg_data.dir->x,
 			tester.solid_data->seg_data.dir->y);
@@ -689,8 +690,7 @@ void init_coll_funcs(void) {
 }
 
 /* Requires dir is a direction and not a 0 vector, pointing FROM s1 INTO s2. */
-void resolve_collision(solid& s1, solid& s2, physics_t *p1, physics_t *p2,
-		vector2d_t& dir) {
+void resolve_collision(solid& s1, solid& s2, vector2d_t& dir) {
 	/*TODO This artificial immobility is fucked! If the onbase is
 	 * actually moving in the direction of its normal, then that
 	 * collision should be treated as a mobile one. */
@@ -702,16 +702,16 @@ void resolve_collision(solid& s1, solid& s2, physics_t *p1, physics_t *p2,
 	assert(norm_d > 0.0);
 	dir = dir / norm_d;
 
-	vector2d_t& v1 = p1->velocity;
+	vector2d_t& v1 = s1.velocity;
 	c1 = 0.0;
 	if (v1.x != 0 || v1.y != 0)
 		c1 = v1.dot(dir);
-	vector2d_t& v2 = p2->velocity;
+	vector2d_t& v2 = s2.velocity;
 	c2 = 0.0;
 	if (v2.x != 1 || v1.y != 0)
 		c2 = v2.dot(dir);
 
-	bool immobile1 = p1->immobile;
+	bool immobile1 = s1.immobile;
 	if ((!immobile1) && c1 <= 0) {
 		vector2d_t& normal = dir;
 		for (list<solid::onbase_data>::iterator I = s1.onbases->begin();
@@ -722,7 +722,7 @@ void resolve_collision(solid& s1, solid& s2, physics_t *p1, physics_t *p2,
 			}
 		}
 	}
-	bool immobile2 = p2->immobile;
+	bool immobile2 = s2.immobile;
 	if (!immobile2 && c2 >= 0) {
 		vector2d_t& normal = -dir; /* from s2 into s1 */
 		for (list<solid::onbase_data>::iterator I = s2.onbases->begin();
@@ -736,10 +736,10 @@ void resolve_collision(solid& s1, solid& s2, physics_t *p1, physics_t *p2,
 
 	/* use parallels to calculate new parallels */
 	if ((!immobile1) && (!immobile2)) {
-		mass_t total_mass = p1->mass + p2->mass;
-		new_c1 = (c1 * (p1->mass - p2->mass) + 2 * p2->mass * c2)
+		mass_t total_mass = s1.mass + s2.mass;
+		new_c1 = (c1 * (s1.mass - s2.mass) + 2 * s2.mass * c2)
 			/ total_mass;
-		new_c2 = (c2 * (p2->mass - p1->mass) + 2 * p1->mass * c1)
+		new_c2 = (c2 * (s2.mass - s1.mass) + 2 * s1.mass * c1)
 			/ total_mass;
 	}
 	else {
@@ -755,7 +755,7 @@ void resolve_collision(solid& s1, solid& s2, physics_t *p1, physics_t *p2,
 	if (immobile2 && fabs(new_c1) < NB_COLL_V_THRESH) {
 		vector2d_t normal = -dir; /* from s2 into s1 */
 
-		if (!p2->immobile)
+		if (!s2.immobile)
 			printf("mobile onbase!\n");
 		printf("s1 is on (%g); dir = %g,%g\n",new_c1,dir.x,dir.y);
 		s1.become_on(&s2, normal); //TODO double onness??
@@ -764,7 +764,7 @@ void resolve_collision(solid& s1, solid& s2, physics_t *p1, physics_t *p2,
 	if (immobile1 && fabs(new_c2) < NB_COLL_V_THRESH) {
 		vector2d_t normal = dir;
 
-		if (!p1->immobile)
+		if (!s1.immobile)
 			printf("mobile onbase!\n");
 		printf("s2 is on; dir = %g,%g\n",dir.x,dir.y);
 		s2.become_on(&s1, normal); //TODO double onness??
@@ -784,22 +784,22 @@ void resolve_collision(solid& s1, solid& s2, physics_t *p1, physics_t *p2,
 	/* use new parallels to calculate new velocities */
 	if (!immobile1) {
 		//printf("delta-c1: %g\n",new_c1-c1);
-		//printf("v1,1 = %g,%g\n",p1->velocity.x,p1->velocity.y);
+		//printf("v1,1 = %g,%g\n",s1.velocity.x,s1.velocity.y);
 		//printf("para1,1 = %g,%g[%g]\n",(dir*c1).x,(dir*c1).y,c1);
 		//printf("para1,2 = %g,%g [%g <- %g]\n",para_c1.x,para_c1.y,c1+delta_c1,new_c1);
 		perp_c1 = v1 - (dir * c1);
 		//printf("perp1 = %g,%g\n",perp_c1.x,perp_c1.y);
-		p1->velocity = para_c1 + perp_c1;
-		//printf("v1,2 = %g,%g\n",p1->velocity.x,p1->velocity.y);
+		s1.velocity = para_c1 + perp_c1;
+		//printf("v1,2 = %g,%g\n",s1.velocity.x,s1.velocity.y);
 	}
 	if (!immobile2) {
 		//printf("delta-c2: %g\n",new_c2-c2);
-		//printf("v2,1 = %g,%g\n",p2->velocity.x,p2->velocity.y);
+		//printf("v2,1 = %g,%g\n",s2.velocity.x,s2.velocity.y);
 		//printf("para2,1 = %g,%g[%g]\n",(dir*c2).x,(dir*c2).y,c2);
 		//printf("para2,2 = %g,%g [%g <- %g]\n",para_c2.x,para_c2.y,c2+delta_c2,new_c2);
 		perp_c2 = v2 - (dir * c2);
-		p2->velocity = para_c2 + perp_c2;
-		//printf("v2,2 = %g,%g\n",p2->velocity.x,p2->velocity.y);
+		s2.velocity = para_c2 + perp_c2;
+		//printf("v2,2 = %g,%g\n",s2.velocity.x,s2.velocity.y);
 	}
 }
 
@@ -832,14 +832,14 @@ bool is_still_on(solid::onbase_data& data, solid *s) {
 }
 
 //TODO move these initializers
-solid *new_ball(solid *buf, real_t x, real_t y, real_t r, SDL_Surface *img, real_t e) {
+solid *new_ball(solid *buf, bool immobile, real_t x, real_t y, real_t r, SDL_Surface *img, real_t e) {
 	assert(r >= 0.0);
 	solid *ret = buf;
 	if (!ret) {
-		ret = new solid(x, y, e);
+		ret = new solid(x, y, e, immobile);
 	}
 	else {
-		solid tmp = solid(x, y, e);
+		solid tmp = solid(x, y, e, immobile);
 		*ret = tmp;
 	}
 	ret->solid_type = NB_SLD_BALL;
@@ -850,15 +850,15 @@ solid *new_ball(solid *buf, real_t x, real_t y, real_t r, SDL_Surface *img, real
 	return ret;
 }
 
-solid *new_seg(solid *buf, real_t x, real_t y, real_t dx, real_t dy, bool directed,
+solid *new_seg(solid *buf, bool immobile, real_t x, real_t y, real_t dx, real_t dy, bool directed,
 		real_t e) {
 	assert(dx != 0 || dy != 0);
 	solid *ret = buf;
 	if (!ret) {
-		ret = new solid(x, y, e);
+		ret = new solid(x, y, e, immobile);
 	}
 	else {
-		solid tmp = solid(x, y, e);
+		solid tmp = solid(x, y, e, immobile);
 		*ret = tmp;
 	}
 	ret->solid_type = NB_SLD_SEG;
@@ -869,21 +869,18 @@ solid *new_seg(solid *buf, real_t x, real_t y, real_t dx, real_t dy, bool direct
 	return ret;
 }
 
-solid *new_poly(solid *buf, real_t *points, unsigned num_pts, real_t x, real_t y,
+solid *new_poly(solid *buf, bool immobile, real_t *points, unsigned num_pts, real_t x, real_t y,
 		real_t e, unsigned color) {
 	assert(points);
 	assert(num_pts >= 3);
 	solid *ret = buf;
 	if (!ret) {
-		ret = new solid();
+		ret = new solid(x, y, e, immobile);
 	}
 	else {
-		solid tmp = solid();
+		solid tmp = solid(x, y, e, immobile);
 		*ret = tmp;
 	}
-	ret->x = x;
-	ret->y = y;
-	ret->elasticity = e;
 	ret->solid_type = NB_SLD_POLY;
 
 #define X_COORD(i) (points[(2 * (i))])
@@ -891,7 +888,7 @@ solid *new_poly(solid *buf, real_t *points, unsigned num_pts, real_t x, real_t y
 	solid **segs = new solid *[num_pts];
 	for (int i = 0; i < num_pts; i++) {
 		int next_i = (i + 1) % num_pts;
-		solid *segment = new_seg(NULL, X_COORD(i), Y_COORD(i),
+		solid *segment = new_seg(NULL, true, X_COORD(i), Y_COORD(i),
 				X_COORD(next_i) - X_COORD(i),
 				Y_COORD(next_i) - Y_COORD(i), true);
 		segs[i] = segment;
@@ -906,19 +903,16 @@ solid *new_poly(solid *buf, real_t *points, unsigned num_pts, real_t x, real_t y
 	return ret;
 }
 
-solid *new_poly(solid *buf, real_t x, real_t y, real_t e, int num_points, ...) {
+solid *new_poly(solid *buf, bool immobile, real_t x, real_t y, real_t e, int num_points, ...) {
 	assert(num_points >= 3);
 	solid *ret = buf;
 	if (!ret) {
-		ret = new solid();
+		ret = new solid(x, y, e, immobile);
 	}
 	else {
-		solid tmp = solid();
+		solid tmp = solid(x, y, e, immobile);
 		*ret = tmp;
 	}
-	ret->x = x;
-	ret->y = y;
-	ret->elasticity = e;
 	ret->solid_type = NB_SLD_POLY;
 
 	solid **segs = new solid *[num_points];
@@ -930,14 +924,14 @@ solid *new_poly(solid *buf, real_t x, real_t y, real_t e, int num_points, ...) {
 	for (int i = 0; i < num_points - 1; i++) {
 		real_t x = va_arg(args, double);
 		real_t y = va_arg(args, double);
-		solid *s = new_seg(NULL, prev_x, prev_y, x - prev_x, y - prev_y, true);
+		solid *s = new_seg(NULL, true, prev_x, prev_y, x - prev_x, y - prev_y, true);
 		segs[i] = s;
 
 		prev_x = x;
 		prev_y = y;
 	}
 	va_end(args);
-	segs[num_points - 1] = new_seg(NULL, prev_x, prev_y, segs[0]->x - prev_x,
+	segs[num_points - 1] = new_seg(NULL, true, prev_x, prev_y, segs[0]->x - prev_x,
 			segs[0]->y - prev_y);
 	ret->solid_data->poly_data.segs = (void **) segs;
 	ret->solid_data->poly_data.num_segs = num_points;

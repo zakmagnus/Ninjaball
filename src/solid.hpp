@@ -58,7 +58,8 @@ class solid : public visible, public physics_t {
 		list<on_backref_data> *on_backrefs;
 
 		unsigned get_solid_type(void);
-		solid(real_t x=0.0, real_t y=0.0, real_t e=0.0);
+		solid(real_t x=0.0, real_t y=0.0, real_t e=0.0,
+				bool immobile=false, mass_t mass=1);
 		list<onbase_data>::iterator become_on(solid *onbase,
 				vector2d_t& normal);
 		void become_onbase(solid *backref, vector2d_t& normal,
@@ -67,14 +68,14 @@ class solid : public visible, public physics_t {
 			stop_being_on(list<onbase_data>::iterator I);
 		virtual void verify_onbases(void);
 
-		friend solid *new_ball(solid *buf, real_t x, real_t y, real_t r,
+		friend solid *new_ball(solid *buf, bool immobile, real_t x, real_t y, real_t r,
 				SDL_Surface *img, real_t e);
-		friend solid *new_seg(solid *buf, real_t x, real_t y, real_t dx,
+		friend solid *new_seg(solid *buf, bool immobile, real_t x, real_t y, real_t dx,
 				real_t dy, bool directed,
 				real_t e);
-		friend solid *new_poly(solid *buf, real_t *points, unsigned num_pts,
+		friend solid *new_poly(solid *buf, bool immobile, real_t *points, unsigned num_pts,
 				real_t x, real_t y, real_t e, unsigned color);
-		friend solid *new_poly(solid *buf, real_t x, real_t y, real_t e,
+		friend solid *new_poly(solid *buf, bool immobile, real_t x, real_t y, real_t e,
 				int num_points, ...);
 };
 
@@ -129,22 +130,21 @@ static bool solids_collide(solid& s1, solid& s2, vector2d_t *dir) {
 
 /* adjust velocities due to collision, in the directions of
  * the given vectors */
-void resolve_collision(solid& s1, solid& s2, physics_t *p1, physics_t *p2,
-		vector2d_t& dir);
+void resolve_collision(solid& s1, solid& s2, vector2d_t& dir);
 /* check is a solid is actually still on one of its onbases */
 //TODO make this a member function?
 bool is_still_on(solid::onbase_data& data, solid *s);
 
 //TODO move these declarations?
-solid *new_ball(solid *buf, real_t x=0.0, real_t y=0.0, real_t r=0.0,
+solid *new_ball(solid *buf, bool immobile, real_t x=0.0, real_t y=0.0, real_t r=0.0,
 		SDL_Surface *img=NULL, real_t e=0.0);
-solid *new_seg(solid *buf, real_t x=0.0, real_t y=0.0, real_t dx=1.0,
+solid *new_seg(solid *buf, bool immobile, real_t x=0.0, real_t y=0.0, real_t dx=1.0,
 		real_t dy=1.0, bool directed=false,
 		real_t e=0.0);
-solid *new_poly(solid *buf, real_t *points, unsigned num_pts,
+solid *new_poly(solid *buf, bool immobile, real_t *points, unsigned num_pts,
 		real_t x=0.0, real_t y=0.0, real_t e=0.0,
 		unsigned color=0xFFffFFff);
-solid *new_poly(solid *buf, real_t x, real_t y, real_t e,
+solid *new_poly(solid *buf, bool immobile, real_t x, real_t y, real_t e,
 		int num_points, ...);
 
 //TODO move this

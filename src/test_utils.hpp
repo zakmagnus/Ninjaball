@@ -20,7 +20,7 @@ struct moveable_data {
 
 class hook : public solid {
 	public:
-		hook() {new_seg(this, 0, 0, 1, 1, false);};
+		hook() {new_seg(this, true, 0, 0, 1, 1, false);};
 		void init(Moveable *m, vector2d_t& dir);
 		bool advance(Moveable *m, real_t dt);
 };

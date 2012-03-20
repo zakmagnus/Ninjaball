@@ -70,13 +70,13 @@ int main (int argc, char **argv) {
 	MOVES_PUSH(guy);
 
 	real_t wall2_pts[] = {0, 0, 500, 0, 500, -100, 0, -100};
-	walls->push_back(new_poly(NULL, wall2_pts, 4, 200, 600));
+	walls->push_back(new_poly(NULL, true, wall2_pts, 4, 200, 600));
 	real_t sloped_pts[] = {0, 0, 0, 50, 300, 50, 200, 0};
-	walls->push_back(new_poly(NULL, sloped_pts, 4, 100, 100));
+	walls->push_back(new_poly(NULL, true, sloped_pts, 4, 100, 100));
 
 	real_t wall1_pts[] = {0, 0, 50, 0, 50, -400, 0, -400};
-	walls->push_back(new_poly(NULL, wall1_pts, 4, 500, 300));
-	walls->push_back(new_poly(NULL, wall1_pts, 4, 650, 300));
+	walls->push_back(new_poly(NULL, true, wall1_pts, 4, 500, 300));
+	walls->push_back(new_poly(NULL, true, wall1_pts, 4, 650, 300));
 	
 	real_t sq_points[] = {0, 0, 20, 0, 20, -20, 0, -20};
 	//MOVES_PUSH(new Moveable(new_poly(NULL, sq_points, 4, 270, 290, 1)));
@@ -86,7 +86,7 @@ int main (int argc, char **argv) {
 
 	real_t hex_points[] = {0, 0, 40, 0, 50, -20,
 		45, -40, 30, -35, -10, -10};
-	MOVES_PUSH((Moveable *)new_poly(new Moveable(), hex_points, 6, 170, 50, 1));
+	MOVES_PUSH((Moveable *)new_poly(new Moveable(), false, hex_points, 6, 170, 50, 1));
 	
 	SDL_Event event;
 
@@ -113,10 +113,10 @@ int main (int argc, char **argv) {
 		guy->choose_action(walls, dt); //TODO everyone should do this
 
 		//TODO move this somewhere better?
-#define CHECK_COLLISION(s1,s2,p1,p2,mi1,mi2) do {\
+#define CHECK_COLLISION(s1,s2,mi1,mi2) do {\
 	vector2d_t dir;\
 	if (solids_collide(s1, s2, &dir)) {\
-		resolve_collision(s1, s2, p1, p2, dir);\
+		resolve_collision(s1, s2, dir);\
 		if (mi1 >= 0) \
 			moves->at(mi1).collided = true;\
 		if (mi2 >= 0) \
@@ -132,9 +132,6 @@ int main (int argc, char **argv) {
 			for (j = 0; j < walls->size(); j++) {
 				CHECK_COLLISION(*moves->at(i).m,
 						*walls->at(j),
-						moves->at(i).m,
-						&immobile_physics,
-						//walls->at(j)->physics,
 						i, -1);
 			}
 		}
@@ -143,8 +140,6 @@ int main (int argc, char **argv) {
 			for (j = i + 1; j < moves->size(); j++) {
 				CHECK_COLLISION(*moves->at(i).m,
 						*moves->at(j).m,
-						moves->at(i).m,
-						moves->at(j).m,
 						i, j);
 			}
 
@@ -239,7 +234,7 @@ void init_guy(void) {
 	if (guy)
 		delete guy;
 
-	guy = (player *)new_ball(new player(), GUY_INIT_X, GUY_INIT_Y,
+	guy = (player *)new_ball(new player(), false, GUY_INIT_X, GUY_INIT_Y,
 			img3->h / 2.0, img3, 1.0);
 }
 
