@@ -24,6 +24,17 @@ player::player() : Moveable() {
 	this->flyhook = new hook();
 	this->rope = new ropedata[1];
 	this->a_on = this->d_on = this->q_on = this->e_on = false;
+	this->alive = true;
+
+	put_solid_prop(NB_PLAYER, this->props);
+	this->collision_callback_func = player_collided;
+}
+
+void player_collided(solid *p, solid& other) {
+	bool deadly = (bool) get_solid_prop(NB_DEADLY, other.props);
+	if (deadly) {
+		((player *)p)->alive = false;
+	}
 }
 
 void player::handle_input(SDL_Event& event, real_t dt) {

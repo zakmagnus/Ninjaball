@@ -87,6 +87,12 @@ int main (int argc, char **argv) {
 	real_t hex_points[] = {0, 0, 40, 0, 50, -20,
 		45, -40, 30, -35, -10, -10};
 	MOVES_PUSH((Moveable *)new_poly(new Moveable(), false, hex_points, 6, 170, 50, 1));
+
+	solid *killer_triangle = new_poly(NULL, true, tri_points, 3, 800, 450,
+			1, 0xFF0000ff);
+	put_solid_prop(NB_DEADLY, killer_triangle->props);
+
+	walls->push_back(killer_triangle);
 	
 	SDL_Event event;
 
@@ -159,6 +165,8 @@ int main (int argc, char **argv) {
 			moves->at(i).m->verify_onbases();
 		}
 
+		if (!guy->alive)
+			dead();
 		if (guy->x > SCREEN_WIDTH + WORLD_RIGHT_LIMIT)
 			dead();
 		else if (guy->x < -WORLD_LEFT_LIMIT)

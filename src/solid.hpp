@@ -8,6 +8,7 @@
 #include "solid_types.hpp"
 #include "visible.hpp"
 using namespace std;
+//TODO this file is full of so much crap. break it up into smaller files
 
 #define NB_NUM_COLL_FUNCS ((NB_NUM_SLD_TYPES * (NB_NUM_SLD_TYPES + 1)) / 2)
 
@@ -36,9 +37,24 @@ union solid_data_t {
 	struct poly_data_t poly_data;
 };
 
+typedef unsigned solid_props_t;
+typedef unsigned solid_prop_id;
+enum {
+	NB_DEADLY = 0,
+	NB_PLAYER,
+	NB_NUM_SLD_PROPS /* not a property, just a count */
+};
+void init_solid_props(solid_props_t& props);
+void set_solid_props(solid_props_t& dst, solid_props_t& src);
+void add_solid_props(solid_props_t& dst, solid_props_t& src);
+void *get_solid_prop(solid_prop_id prop, solid_props_t& src);
+void put_solid_prop(solid_prop_id prop, solid_props_t& src);
+void remove_solid_prop(solid_prop_id prop, solid_props_t& src);
+
 class solid : public visible, public physics_t {
 	protected:
 		unsigned solid_type;
+		void (*collision_callback_func)(solid *collidee, solid& collider);
 		void apply_normal_forces(void);
 	public:
 		struct onbase_data {
@@ -56,6 +72,7 @@ class solid : public visible, public physics_t {
 		solid_data_t *solid_data;
 		list<onbase_data> *onbases;
 		list<on_backref_data> *on_backrefs;
+		solid_props_t props;
 
 		unsigned get_solid_type(void);
 		solid(real_t x=0.0, real_t y=0.0, real_t e=0.0,
@@ -67,6 +84,7 @@ class solid : public visible, public physics_t {
 		list<onbase_data>::iterator
 			stop_being_on(list<onbase_data>::iterator I);
 		virtual void verify_onbases(void);
+		void collision_callback(solid& s);
 
 		friend solid *new_ball(solid *buf, bool immobile, real_t x, real_t y, real_t r,
 				SDL_Surface *img, real_t e);

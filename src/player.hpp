@@ -40,6 +40,9 @@ class player : public Moveable {
 		virtual void verify_onbases(void);
 		virtual void show(SDL_Surface *screen, SDL_Rect *camera);
 		ropedata *rope;
+		bool alive;
 };
+
+void player_collided(solid *player, solid& other);
 
 #endif

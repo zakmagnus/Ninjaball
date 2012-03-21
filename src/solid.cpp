@@ -26,6 +26,44 @@ solid::solid(real_t x, real_t y, real_t e, bool immobile, mass_t mass)
 	//TODO make abstract?
 	this->solid_type = NB_NUM_SLD_TYPES;
 	this->solid_data = new solid_data_t;
+	this->collision_callback_func = NULL;
+
+	init_solid_props(this->props);
+}
+
+void solid::collision_callback(solid& s) {
+	if (this->collision_callback_func)
+		this->collision_callback_func(this, s);
+}
+
+void init_solid_props(solid_props_t& props) {
+	props = 0;
+}
+
+void set_solid_props(solid_props_t& dst, solid_props_t& src) {
+	dst = src;
+}
+
+void add_solid_props(solid_props_t& dst, solid_props_t& src) {
+	dst |= src;
+}
+
+void *get_solid_prop(solid_prop_id prop, solid_props_t& src) {
+	assert(prop < NB_NUM_SLD_PROPS);
+
+	return (void *) (src & (1 << prop));
+}
+
+void put_solid_prop(solid_prop_id prop, solid_props_t& src) {
+	assert(prop < NB_NUM_SLD_PROPS);
+
+	src |= (1 << prop);
+}
+
+void remove_solid_prop(solid_prop_id prop, solid_props_t& src) {
+	assert(prop < NB_NUM_SLD_PROPS);
+
+	src &= ~(1 << prop);
 }
 
 unsigned solid::get_solid_type(void) {
@@ -702,6 +740,10 @@ void resolve_collision(solid& s1, solid& s2, vector2d_t& dir) {
 	assert(norm_d > 0.0);
 	dir = dir / norm_d;
 
+	//TODO when should this happen? what if these adjust velocities?
+	s1.collision_callback(s2);
+	s2.collision_callback(s1);
+
 	vector2d_t& v1 = s1.velocity;
 	c1 = 0.0;
 	if (v1.x != 0 || v1.y != 0)
@@ -839,8 +881,10 @@ solid *new_ball(solid *buf, bool immobile, real_t x, real_t y, real_t r, SDL_Sur
 		ret = new solid(x, y, e, immobile);
 	}
 	else {
-		solid tmp = solid(x, y, e, immobile);
-		*ret = tmp;
+		ret->x = x;
+		ret->y = y;
+		ret->elasticity = e;
+		ret->immobile = immobile;
 	}
 	ret->solid_type = NB_SLD_BALL;
 	ret->solid_data->ball_data.r = r;
@@ -858,8 +902,10 @@ solid *new_seg(solid *buf, bool immobile, real_t x, real_t y, real_t dx, real_t 
 		ret = new solid(x, y, e, immobile);
 	}
 	else {
-		solid tmp = solid(x, y, e, immobile);
-		*ret = tmp;
+		ret->x = x;
+		ret->y = y;
+		ret->elasticity = e;
+		ret->immobile = immobile;
 	}
 	ret->solid_type = NB_SLD_SEG;
 	vector2d_t *dir = new vector2d_t(dx, dy);
@@ -878,8 +924,10 @@ solid *new_poly(solid *buf, bool immobile, real_t *points, unsigned num_pts, rea
 		ret = new solid(x, y, e, immobile);
 	}
 	else {
-		solid tmp = solid(x, y, e, immobile);
-		*ret = tmp;
+		ret->x = x;
+		ret->y = y;
+		ret->elasticity = e;
+		ret->immobile = immobile;
 	}
 	ret->solid_type = NB_SLD_POLY;
 
@@ -910,8 +958,10 @@ solid *new_poly(solid *buf, bool immobile, real_t x, real_t y, real_t e, int num
 		ret = new solid(x, y, e, immobile);
 	}
 	else {
-		solid tmp = solid(x, y, e, immobile);
-		*ret = tmp;
+		ret->x = x;
+		ret->y = y;
+		ret->elasticity = e;
+		ret->immobile = immobile;
 	}
 	ret->solid_type = NB_SLD_POLY;
 
