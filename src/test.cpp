@@ -88,11 +88,15 @@ int main (int argc, char **argv) {
 		45, -40, 30, -35, -10, -10};
 	MOVES_PUSH((Moveable *)new_poly(new Moveable(), false, hex_points, 6, 170, 50, 1));
 
-	solid *killer_triangle = new_poly(NULL, true, tri_points, 3, 800, 450,
+	solid *sbuf = new_poly(NULL, true, tri_points, 3, 800, 450,
 			1, 0xFF0000ff);
-	put_solid_prop(NB_DEADLY, killer_triangle->props);
+	put_solid_prop(NB_DEADLY, sbuf->props);
+	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
+	walls->push_back(sbuf);
 
-	walls->push_back(killer_triangle);
+	sbuf = new_poly(NULL, true, sq_points, 4, 0, 350, 1, 0x00ff00ff);
+	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
+	walls->push_back(sbuf);
 	
 	SDL_Event event;
 

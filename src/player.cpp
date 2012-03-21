@@ -181,6 +181,8 @@ void player::choose_action(vector<solid *> *walls, real_t dt) {
 		this->rope->length = flyhook->solid_data->seg_data.dir->norm();
 
 		for (int i = 0; i < walls->size(); i++) {
+			if (get_solid_prop(NB_UNSTICKABLE, walls->at(i)->props))
+				continue;
 			if (solids_collide(*walls->at(i), *flyhook, NULL)) {
 				hook_flying = false;
 				this->attach_rope();
