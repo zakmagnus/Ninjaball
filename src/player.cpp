@@ -127,6 +127,7 @@ void player::handle_input(SDL_Event& event, real_t dt) {
 				break;
 		}
 	}
+
 }
 
 void player::update_rope(void) {
@@ -190,6 +191,12 @@ void player::choose_action(vector<solid *> *walls, real_t dt) {
 			}
 		}
 	}
+}
+
+void player::mouse_at(int mx, int my) {
+	vector2d_t pv(mx - this->x, my - this->y);
+	if (pv.normalize())
+		this->pointer_angle = dir_to_angle(pv);
 }
 
 void player::move(real_t dt) {

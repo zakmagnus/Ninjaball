@@ -39,6 +39,7 @@ class player : public Moveable {
 		virtual void move(real_t dt);
 		virtual void verify_onbases(void);
 		virtual void show(SDL_Surface *screen, SDL_Rect *camera);
+		void mouse_at(int mx, int my);
 		ropedata *rope;
 		bool alive;
 };
