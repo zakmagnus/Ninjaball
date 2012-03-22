@@ -15,7 +15,6 @@ physics:
 bugs:
 -hook attaches in weird ways sometimes
 -bouncing off near-horizontal slopes when the slope's object is on a horizontal immobile doesn't work
--bottomless pit?
 
 possible features:
 -turning the string into a (solid) rope (chain of constraints)
