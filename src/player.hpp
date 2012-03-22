@@ -21,8 +21,7 @@ class player : public Moveable {
 		list<solid::onbase_data>::iterator ropepos;
 		bool rope_taut;
 		int rope_state;
-		real_t pointer_angle;
-		real_t pointer_vel;
+		vector2d_t pointer_dir;
 		hook *flyhook;
 		bool hook_flying;
 		void attach_rope(void);

@@ -17,8 +17,7 @@ using namespace std;
 player::player() : Moveable() {
 	this->rope_state = NB_ROPE_STATE_NONE;
 	this->rope_taut = false;
-	this->pointer_angle = 0;
-	this->pointer_vel = 0;
+	this->pointer_dir = upvec;
 	this->hook_flying = false;
 	this->rope_attached = false;
 	this->flyhook = new hook();
@@ -61,34 +60,6 @@ void player::handle_input(SDL_Event& event, real_t dt) {
 				this->d_on = true;
 				//total_force += rightforce;
 				break;
-			case SDLK_e:
-				this->e_on = true;
-				/*
-				this->pointer_vel +=
-					NB_POINTER_TURN_SPEED;
-					*/
-				break;
-			case SDLK_q:
-				this->q_on = true;
-				/*
-				this->pointer_vel -=
-					NB_POINTER_TURN_SPEED;
-					*/
-				break;
-			case SDLK_f:
-				/*
-				if (rope_attached) {
-					this->remove_rope();
-				}
-				else if (!hook_flying) {
-					hook_flying = true;
-					vector2d_t hookdir =
-						angle_to_dir
-						(pointer_angle);
-					flyhook->init(this, hookdir);
-				}
-				*/
-				break;
 		}
 	}
 	else if (event.type == SDL_KEYUP) {
@@ -112,20 +83,6 @@ void player::handle_input(SDL_Event& event, real_t dt) {
 			case SDLK_RIGHT:
 				this->d_on = false;
 				//this->total_force += leftforce;
-				break;
-			case SDLK_e:
-				this->e_on = false;
-				/*
-				this->pointer_vel -=
-					NB_POINTER_TURN_SPEED;
-					*/
-				break;
-			case SDLK_q:
-				this->q_on = false;
-				/*
-				this->pointer_vel +=
-					NB_POINTER_TURN_SPEED;
-					*/
 				break;
 		}
 	}
@@ -165,12 +122,6 @@ void player::choose_action(vector<solid *> *walls, real_t dt) {
 		this->add_tmp_force(leftforce);
 	if (d_on)
 		this->add_tmp_force(rightforce);
-	if (e_on)
-		this->pointer_vel = NB_POINTER_TURN_SPEED;
-	if (q_on)
-		this->pointer_vel = -NB_POINTER_TURN_SPEED;
-	if (q_on && e_on)
-		this->pointer_vel = 0;
 
 	if (hook_flying)
 		hook_flying = flyhook->advance(this, dt);
@@ -198,13 +149,12 @@ void player::choose_action(vector<solid *> *walls, real_t dt) {
 void player::mouse_at(int mx, int my, char button) {
 	vector2d_t pv(mx - this->x, my - this->y);
 	if (pv.normalize())
-		this->pointer_angle = dir_to_angle(pv);
+		this->pointer_dir = pv;
 
 	if (button & SDL_BUTTON_LEFT) {
 		if (!(rope_attached || hook_flying)) {
 			hook_flying = true;
-			vector2d_t hookdir = angle_to_dir(pointer_angle);
-			flyhook->init(this, hookdir);
+			flyhook->init(this, this->pointer_dir);
 		}
 	}
 	else {
@@ -215,13 +165,6 @@ void player::mouse_at(int mx, int my, char button) {
 }
 
 void player::move(real_t dt) {
-	this->pointer_angle += this->pointer_vel * dt;
-	this->pointer_vel = 0;
-	if (this->pointer_angle < 0)
-		this->pointer_angle += 2 * M_PI;
-	else if (this->pointer_angle > 2 * M_PI)
-		this->pointer_angle -= 2 * M_PI;
-
 	//TODO calculate ropedist once and pass to the following functions
 	this->change_rope_len(dt);
 	this->update_rope();
@@ -298,8 +241,7 @@ void player::verify_onbases(void) {
 void player::show(SDL_Surface *screen, SDL_Rect *camera) {
 	Moveable::show(screen, camera);
 
-	vector2d_t hookdir = angle_to_dir(this->pointer_angle);
-	render_pointer(screen, this, hookdir, camera);
+	render_pointer(screen, this, this->pointer_dir, camera);
 	if (this->hook_flying || this->rope_attached) {
 		render_rope(screen, *this->rope, camera);
 	}
