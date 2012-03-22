@@ -76,6 +76,7 @@ void player::handle_input(SDL_Event& event, real_t dt) {
 					*/
 				break;
 			case SDLK_f:
+				/*
 				if (rope_attached) {
 					this->remove_rope();
 				}
@@ -86,6 +87,7 @@ void player::handle_input(SDL_Event& event, real_t dt) {
 						(pointer_angle);
 					flyhook->init(this, hookdir);
 				}
+				*/
 				break;
 		}
 	}
@@ -193,10 +195,23 @@ void player::choose_action(vector<solid *> *walls, real_t dt) {
 	}
 }
 
-void player::mouse_at(int mx, int my) {
+void player::mouse_at(int mx, int my, char button) {
 	vector2d_t pv(mx - this->x, my - this->y);
 	if (pv.normalize())
 		this->pointer_angle = dir_to_angle(pv);
+
+	if (button & SDL_BUTTON_LEFT) {
+		if (!(rope_attached || hook_flying)) {
+			hook_flying = true;
+			vector2d_t hookdir = angle_to_dir(pointer_angle);
+			flyhook->init(this, hookdir);
+		}
+	}
+	else {
+		hook_flying = false;
+		if (rope_attached)
+			this->remove_rope();
+	}
 }
 
 void player::move(real_t dt) {

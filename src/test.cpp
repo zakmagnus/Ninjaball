@@ -120,11 +120,11 @@ int main (int argc, char **argv) {
 			guy->handle_input(event, dt);
 		}
 		int mx, my;
-		SDL_GetMouseState(&mx, &my);
+		char button = SDL_GetMouseState(&mx, &my);
 		mx += camera.x;
 		my += camera.y;
 
-		guy->mouse_at(mx, my);
+		guy->mouse_at(mx, my, button);
 
 		guy->choose_action(walls, dt); //TODO everyone should do this
 
