@@ -259,9 +259,11 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 					Bymin, Bymax);
 			if (y_overlap >= 0) {
 				seg_seg_coll_dir(s1, s2, dir);
+				/*
 				printf("%g,%g->%g,%g collides with %g,%g->%g,%g at %g,??\n",
 					Ax1, Ay1, Ax2, Ay2, Bx1, By1, Bx2, By2,
 					Ax1);
+				*/
 				return true;
 			}
 
@@ -273,9 +275,6 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 		return false;\
 	real_t y_int = LINE_Y_COORD(x_int, sm, sx1, sy1);\
 	if (between(vy1, y_int, vy2)) {\
-		printf("%g,%g->%g,%g collides with %g,%g->%g,%g at %g,%g\n",\
-				vx, vy1, vx, vy2, sx1, sy1, sx2, sy2,\
-				x_int, y_int);\
 		seg_seg_coll_dir(s1, s2, dir);\
 		return true;\
 	}\
@@ -303,9 +302,11 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 		real_t y4 = LINE_Y_COORD(Bxmin, Am, Ax, Ay);
 		//TODO standardize this real_t closeness
 		if (fabs(y1 - y2) <= 0.001 || fabs(y3 - y4) <= 0.001) {
+			/*
 			printf("%g,%g->%g,%g collides with %g,%g->%g,%g at %g,%g or %g,%g\n",
 					Ax1, Ay1, Ax2, Ay2, Bx1, By1, Bx2, By2,
 					Axmin, y1, Bxmin, y3);
+			*/
 			seg_seg_coll_dir(s1, s2, dir);
 			return true;
 		}
@@ -317,15 +318,18 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	 * segments */
 	real_t X_int = (Ax * Am - Bx * Bm + By - Ay) / (Am - Bm);
 
-	/* algebra sanity check */
 	real_t Y_int = LINE_Y_COORD(X_int, Am, Ax, Ay);
+	/*
 	real_t Y_int_alt = LINE_Y_COORD(X_int, Bm, Bx, By);
-	assert(fabs(Y_int - Y_int_alt) <= 0.01);
+	assert(SIMILAR_REALS(Y_int, Y_int_alt));
+	*/
 
 	if (between(Bx1, X_int, Bx2) && between(Ax1, X_int, Ax2)) {
+		/*
 		printf("%g,%g->%g,%g collides with %g,%g->%g,%g at %g,%g\n",
 				Ax1, Ay1, Ax2, Ay2, Bx1, By1, Bx2, By2,
 				X_int, Y_int);
+		*/
 		seg_seg_coll_dir(s1, s2, dir);
 		return true;
 	}

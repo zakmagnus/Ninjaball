@@ -17,7 +17,7 @@ using namespace std;
 #define WORLD_TOP_LIMIT 1000
 #define WORLD_BOT_LIMIT 500
 #define WORLD_LEFT_LIMIT 500
-#define WORLD_RIGHT_LIMIT 500
+#define WORLD_RIGHT_LIMIT 2000
 #define CAM_MAX_Y (CAM_INIT_Y + WORLD_BOT_LIMIT)
 #define CAM_MIN_Y (CAM_INIT_Y - WORLD_TOP_LIMIT)
 #define CAM_MAX_X (CAM_INIT_X + WORLD_RIGHT_LIMIT)
@@ -91,10 +91,42 @@ int main (int argc, char **argv) {
 	solid *sbuf = new_poly(NULL, true, tri_points, 3, 800, 450,
 			1, 0xFF0000ff);
 	put_solid_prop(NB_DEADLY, sbuf->props);
-	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
 	walls->push_back(sbuf);
 
 	sbuf = new_poly(NULL, true, sq_points, 4, 0, 350, 1, 0x00ff00ff);
+	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
+	walls->push_back(sbuf);
+
+	sbuf = new_poly(NULL, true, sloped_pts, 4, -180, 200, 1, 0xFF0000ff);
+	put_solid_prop(NB_DEADLY, sbuf->props);
+	walls->push_back(sbuf);
+
+	walls->push_back(new_poly(NULL, true, sq_points, 4, 1000, 390));
+	walls->push_back(new_poly(NULL, true, sq_points, 4, 1300, 390));
+	walls->push_back(new_poly(NULL, true, sq_points, 4, 1600, 390));
+	walls->push_back(new_poly(NULL, true, sq_points, 4, 1900, 390));
+	walls->push_back(new_poly(NULL, true, sq_points, 4, 2200, 250));
+
+	real_t unstick_pts[] = {0, 0, 50, 0, -100, -100, -150, -100};
+	sbuf = new_poly(NULL, true, unstick_pts, 4, 2200, 390, 1, 0x00ff00ff);
+	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
+	walls->push_back(sbuf);
+	real_t spike_pts[] = {0, 0, 30, -20, 0, -40};
+	sbuf = new_poly(NULL, true, spike_pts, 3, 2250, 410, 1, 0xFF0000ff);
+	put_solid_prop(NB_DEADLY, sbuf->props);
+	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
+	walls->push_back(sbuf);
+
+	real_t upright_tri[] = {0, 0, 100, -100, 100, 0};
+	walls->push_back(new_poly(NULL, true, upright_tri, 3, 70, 800));
+	sbuf = new_poly(NULL, true, wall2_pts, 4, -450, 700, 1, 0xFF0000ff);
+	put_solid_prop(NB_DEADLY, sbuf->props);
+	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
+	walls->push_back(sbuf);
+
+	real_t small_rect[] = {0, 0, 250, 0, 250, -40, 0, -40};
+	sbuf = new_poly(NULL, true, small_rect, 4, -170, 860, 1, 0xFF0000ff);
+	put_solid_prop(NB_DEADLY, sbuf->props);
 	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
 	walls->push_back(sbuf);
 	
