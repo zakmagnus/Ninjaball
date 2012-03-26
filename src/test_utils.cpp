@@ -24,6 +24,7 @@ void apply_surface (SDL_Surface *src, SDL_Surface *dst, int x, int y,
 	SDL_BlitSurface(src, NULL, dst, &off);
 }
 
+//TODO use a visible here
 void render_rope(SDL_Surface *srf, ropedata& rope, SDL_Rect *camera) {
 	//TODO render loose rope hanging loosely
 	real_t x1 = rope.x1, x2 = rope.x2, y1 = rope.y1, y2 = rope.y2;
@@ -62,6 +63,7 @@ void render_rope(SDL_Surface *srf, ropedata& rope, SDL_Rect *camera) {
 	lineColor(srf, x1, y1, x2, y2, color);
 }
 
+//TODO use a visible here
 void render_pointer(SDL_Surface *srf, solid *b, vector2d_t& dir, SDL_Rect *camera) {
 	vector2d_t endpt;
 	endpt.x = b->x;
@@ -90,10 +92,13 @@ bool hook::advance(Moveable *m, real_t dt) {
 	if (d >= NB_ROPE_MAX_LEN)
 		return false;
 
+	this->x += this->solid_data->seg_data.dir->x;
+	this->y += this->solid_data->seg_data.dir->y;
 	this->solid_data->seg_data.dir->normalize();
-
+	/*
 	this->x = m->x + ((*this->solid_data->seg_data.dir) * d).x;
 	this->y = m->y + ((*this->solid_data->seg_data.dir) * d).y;
+	*/
 	(*this->solid_data->seg_data.dir) *= dt * NB_HOOK_SPD;
 	return true;
 }
