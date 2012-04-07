@@ -13,7 +13,7 @@ vector<solid *> *walls;
 vector<moveable_data> *moves;
 player *guy = NULL;
 
-bool quit = false;
+int quit = 0;
 
 void update_camera(void) {
 	real_t center_x = camera.x + (SCREEN_WIDTH / 2);
@@ -60,10 +60,7 @@ void init_guy(void) {
 }
 
 void dead(void) {
-	char *dead_msg[] = {"YOU DIE!", "", "Press any key to respawn.", NULL};
-	show_screen(dead_msg);
-	init_guy();
-	//TODO have this break outer loop
+	quit = -1;
 }
 
 int init_stuff (void) {
@@ -110,5 +107,4 @@ void teardown_stuff (void) {
 	SDL_FreeSurface(img1);
 	SDL_FreeSurface(img2);
 	SDL_FreeSurface(img3);
-	TTF_CloseFont(font);
 }

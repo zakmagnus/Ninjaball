@@ -15,6 +15,7 @@ int init_sdl (void) {
 }
 
 void teardown_sdl (void) {
+	TTF_CloseFont(font);
 	TTF_Quit();
 	SDL_Quit();
 }

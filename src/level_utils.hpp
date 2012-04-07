@@ -44,7 +44,7 @@ extern vector<solid *> *walls;
 extern vector<moveable_data> *moves;
 extern player *guy;
 
-extern bool quit;
+extern int quit;
 
 #define MOVES_PUSH(p) do {\
 	moves->resize(moves->size() + 1);\

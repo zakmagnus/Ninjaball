@@ -14,9 +14,15 @@ char *intro[] = {"NINJABALL",
 	NULL};
 int main (int argc, char **argv) {
 	init_sdl();
+
+	SDL_WM_SetCaption("Ninjaball", NULL);
 	show_screen(intro);
 
-	run_level();
+	char *dead_msg[] = {"YOU DIE!", "", "Press any key to restart.", NULL};
+	while (run_level() < 0) {
+		SDL_WM_SetCaption("x_x", NULL);
+		show_screen(dead_msg);
+	}
 
 	teardown_sdl();
 

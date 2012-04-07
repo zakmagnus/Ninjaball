@@ -78,6 +78,7 @@ int run_level (void) {
 
 	int i, j;
 	second_start = SDL_GetTicks();
+	quit = 0;
 	while (!quit) {
 		render_start = SDL_GetTicks();
 
@@ -185,5 +186,5 @@ int run_level (void) {
 
 	teardown_stuff();
 
-	return 1;
+	return quit;
 }
