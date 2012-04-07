@@ -6,7 +6,19 @@
 #include "solid.hpp"
 #include "rope.hpp"
 #include "Moveable.hpp"
-#include "test_utils.hpp"
+
+#define NB_HOOK_SPD (1800.0)
+#define NB_ROPE_MAX_LEN (600)
+
+class hook : public solid {
+	public:
+		hook() {new_seg(this, true, 0, 0, 1, 1, false);};
+		void init(Moveable *m, vector2d_t& dir);
+		bool advance(Moveable *m, real_t dt);
+};
+
+void render_rope(SDL_Surface *srf, ropedata& rope, SDL_Rect *camera);
+void render_pointer(SDL_Surface *srf, solid *b, vector2d_t& dir, SDL_Rect *camera);
 
 enum {
 	NB_ROPE_STATE_NONE = 0,

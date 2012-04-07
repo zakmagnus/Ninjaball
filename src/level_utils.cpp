@@ -1,4 +1,5 @@
 #include "level_utils.hpp"
+#include "SDL/SDL_image.h"
 #include "SDL/SDL_ttf.h"
 #include "ui.hpp"
 
@@ -14,6 +15,28 @@ vector<moveable_data> *moves;
 player *guy = NULL;
 
 int quit = 0;
+
+void apply_surface (SDL_Surface *src, SDL_Surface *dst, int x, int y,
+		SDL_Rect *clip) {
+	SDL_Rect off;
+	off.x = x;
+	off.y = y;
+	if (clip) {
+		off.x = x - clip->x;
+		off.y = y - clip->y;
+	}
+
+	SDL_BlitSurface(src, NULL, dst, &off);
+}
+
+SDL_Surface *load_img (char *filename) {
+	SDL_Surface *tmp = IMG_Load(filename);
+	if (!tmp)
+		return NULL;
+	SDL_Surface *opt = SDL_DisplayFormatAlpha(tmp);
+	SDL_FreeSurface(tmp);
+	return opt;
+}
 
 void update_camera(void) {
 	real_t center_x = camera.x + (SCREEN_WIDTH / 2);

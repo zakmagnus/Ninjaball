@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <math.h>
 #include <vector>
-#include "test_utils.hpp"
 #include "player.hpp"
 #include "Moveable.hpp"
 #include "solid.hpp"
@@ -38,6 +37,12 @@ extern real_t frame_air_drag;
 
 extern vector2d_t gravity;
 
+struct moveable_data {
+	Moveable *m;
+	real_t old_x, old_y;
+	bool collided;
+};
+
 extern SDL_Surface *screen, *img1, *img2, *img3;
 extern SDL_Rect camera;
 extern vector<solid *> *walls;
@@ -52,7 +57,9 @@ extern int quit;
 	moves->back().collided = false;\
 } while (0)
 
-SDL_Surface *load_img (char *);
+void apply_surface (SDL_Surface *src, SDL_Surface *dst, int x, int y,
+		SDL_Rect *clip);
+SDL_Surface *load_img (char *filename);
 int init_stuff (void);
 void teardown_stuff (void);
 void update_camera(void);

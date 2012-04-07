@@ -2,7 +2,6 @@
 #include <vector>
 #include "SDL/SDL_gfxPrimitives.h"
 #include "Moveable.hpp"
-#include "test_utils.hpp"
 #include "vector.hpp"
 #include "visible.hpp"
 

@@ -2,7 +2,7 @@
 #include "SDL/SDL_gfxPrimitives.h"
 #include "visible.hpp"
 #include "solid.hpp"
-#include "test_utils.hpp"
+#include "level_utils.hpp"
 #include "vector.hpp"
 
 visible::visible(int type, void *data) {
