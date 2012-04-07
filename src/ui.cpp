@@ -7,7 +7,7 @@ static SDL_Color white = {0xff, 0xff, 0xff, 0xff};
 int init_sdl (void) {
 	SDL_Init(SDL_INIT_EVERYTHING);
 	TTF_Init();
-	font = TTF_OpenFont("/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+	font = TTF_OpenFont("../img/FreeSans.ttf",
 			15);
 
 	screen = SDL_SetVideoMode(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_BPP,
