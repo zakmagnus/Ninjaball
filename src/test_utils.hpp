@@ -1,6 +1,8 @@
 #ifndef NB_TEST_UTILS_H
 #define NB_TEST_UTILS_H
 
+//TODO put all this elsewhere and get rid of this file
+
 #include <math.h>
 #include "SDL/SDL.h"
 #include "SDL/SDL_image.h"
