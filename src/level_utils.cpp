@@ -92,8 +92,6 @@ int init_stuff (void) {
 	camera.h = SCREEN_HEIGHT;
 	camera.w = SCREEN_WIDTH;
 
-	SDL_WM_SetCaption("Ninjaball level -1", NULL);
-
 	img1 = load_img("../img/nometroid.jpg");
 	if (!img1) {
 		printf("img failed...\n");
@@ -131,3 +129,4 @@ void teardown_stuff (void) {
 	SDL_FreeSurface(img2);
 	SDL_FreeSurface(img3);
 }
+

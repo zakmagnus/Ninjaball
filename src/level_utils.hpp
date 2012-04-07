@@ -16,10 +16,10 @@ using namespace std;
 #define CAM_DEADZONE_W 150
 #define CAM_INIT_X (0)
 #define CAM_INIT_Y (0)
-#define WORLD_TOP_LIMIT 1000
-#define WORLD_BOT_LIMIT 500
-#define WORLD_LEFT_LIMIT 500
-#define WORLD_RIGHT_LIMIT 2000
+extern int WORLD_TOP_LIMIT;
+extern int WORLD_BOT_LIMIT;
+extern int WORLD_LEFT_LIMIT;
+extern int WORLD_RIGHT_LIMIT;
 #define CAM_MAX_Y (CAM_INIT_Y + WORLD_BOT_LIMIT)
 #define CAM_MIN_Y (CAM_INIT_Y - WORLD_TOP_LIMIT)
 #define CAM_MAX_X (CAM_INIT_X + WORLD_RIGHT_LIMIT)
