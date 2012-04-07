@@ -45,11 +45,12 @@ int run_level (void) {
 	put_solid_prop(NB_DEADLY, sbuf->props);
 	walls->push_back(sbuf);
 
-	walls->push_back(new_poly(NULL, true, sq_points, 4, 1000, 390));
-	walls->push_back(new_poly(NULL, true, sq_points, 4, 1300, 390));
-	walls->push_back(new_poly(NULL, true, sq_points, 4, 1600, 390));
-	walls->push_back(new_poly(NULL, true, sq_points, 4, 1900, 390));
-	walls->push_back(new_poly(NULL, true, sq_points, 4, 2200, 250));
+	real_t anchor[] = {0, 0, 15, -40, -15, -40};
+	walls->push_back(new_poly(NULL, true, anchor, 3, 1000, 390));
+	walls->push_back(new_poly(NULL, true, anchor, 3, 1300, 390));
+	walls->push_back(new_poly(NULL, true, anchor, 3, 1600, 390));
+	walls->push_back(new_poly(NULL, true, anchor, 3, 1900, 390));
+	walls->push_back(new_poly(NULL, true, anchor, 3, 2200, 250));
 
 	real_t unstick_pts[] = {0, 0, 50, 0, -100, -100, -150, -100};
 	sbuf = new_poly(NULL, true, unstick_pts, 4, 2200, 390, 1, 0x00ff00ff);
