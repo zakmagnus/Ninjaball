@@ -109,6 +109,8 @@ int run_level (level_func level_init) {
 			dead();
 		else if (guy->y < -WORLD_LEFT_LIMIT)
 			dead();
+		else if (guy->won)
+			success();
 		update_camera();
 
 		SDL_FillRect(screen, NULL, 0);
@@ -137,7 +139,8 @@ int run_level (level_func level_init) {
 }
 
 void init_level_funcs (void) {
-	level_funcs[0] = load_level_one;
+	level_funcs[0] = load_tutorial;
+	level_funcs[1] = load_level_one;
 }
 
 real_t wall2_pts[] = {0, 0, 500, 0, 500, -100, 0, -100};
@@ -150,8 +153,66 @@ real_t hex_points[] = {0, 0, 40, 0, 50, -20,
 real_t anchor[] = {0, 0, 15, -40, -15, -40};
 real_t spike_pts[] = {0, 0, 30, -20, 0, -40};
 real_t unstick_pts[] = {0, 0, 50, 0, -100, -100, -150, -100};
-real_t upright_tri[] = {0, 0, 100, -100, 100, 0};
+real_t upright_tri[] = {0, 0, 100, 0, 0, -100};
 real_t small_rect[] = {0, 0, 250, 0, 250, -40, 0, -40};
+
+void load_tutorial (void) {
+	WORLD_TOP_LIMIT = 500;
+	WORLD_BOT_LIMIT = 100;
+	WORLD_LEFT_LIMIT = 200;
+	WORLD_RIGHT_LIMIT = 2000;
+
+	walls->push_back(new_poly(NULL, true, wall2_pts, 4, GUY_INIT_X - 20,
+				GUY_INIT_Y - 150));
+	walls->push_back(new_poly(NULL, true, wall2_pts, 4, GUY_INIT_X - 20,
+				GUY_INIT_Y + 150));
+	solid *sbuf = new_poly(NULL, true, wall1_pts, 4, GUY_INIT_X - 20,
+			GUY_INIT_Y + 570, 1, 0xFF0000ff);
+	put_solid_prop(NB_DEADLY, sbuf->props);
+	walls->push_back(sbuf);
+
+	sbuf = new_poly(NULL, true, wall2_pts, 4, GUY_INIT_X + 500,
+			GUY_INIT_Y + 200, 1, 0xFF0000ff);
+	put_solid_prop(NB_DEADLY, sbuf->props);
+	walls->push_back(sbuf);
+	sbuf = new_poly(NULL, true, wall2_pts, 4, GUY_INIT_X + 1000,
+			GUY_INIT_Y + 200, 1, 0xFF0000ff);
+	put_solid_prop(NB_DEADLY, sbuf->props);
+	walls->push_back(sbuf);
+
+	walls->push_back(new_poly(NULL, true, wall2_pts, 4, GUY_INIT_X + 500,
+				GUY_INIT_Y - 200));
+	walls->push_back(new_poly(NULL, true, wall2_pts, 4, GUY_INIT_X + 1001,
+				GUY_INIT_Y - 200));
+	walls->push_back(new_poly(NULL, true, small_rect, 4, GUY_INIT_X + 1550,
+				GUY_INIT_Y - 90));
+	walls->push_back(new_poly(NULL, true, small_rect, 4, GUY_INIT_X + 1550,
+				GUY_INIT_Y + 30));
+
+	sbuf = new_poly(NULL, true, upright_tri, 3, GUY_INIT_X + 1520,
+			GUY_INIT_Y - 150, 1, 0xFF0000ff);
+	put_solid_prop(NB_DEADLY, sbuf->props);
+	walls->push_back(sbuf);
+
+	sbuf = new_poly(NULL, true, sq_points, 4, GUY_INIT_X + 1520,
+			GUY_INIT_Y + 70, 1, 0xFF0000ff);
+	put_solid_prop(NB_DEADLY, sbuf->props);
+	walls->push_back(sbuf);
+
+	sbuf = new_poly(NULL, true, sq_points, 4, GUY_INIT_X + 1750,
+			GUY_INIT_Y - 40, 1, 0xFF0000ff);
+	put_solid_prop(NB_DEADLY, sbuf->props);
+	walls->push_back(sbuf);
+
+	//TODO insert a victory item. also, make victory items work.
+	sbuf = new_poly(NULL, true, anchor, 3, GUY_INIT_X + 1700,
+			GUY_INIT_Y - 30, 1, 0xFFff00ff);
+	put_solid_prop(NB_VICTORY, sbuf->props);
+	walls->push_back(sbuf);
+
+	SDL_WM_SetCaption("Ninjaball intro level", NULL);
+}
+
 void load_level_one (void) {
 	WORLD_TOP_LIMIT = 1000;
 	WORLD_BOT_LIMIT = 500;

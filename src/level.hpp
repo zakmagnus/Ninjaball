@@ -3,7 +3,7 @@
 
 typedef void (*level_func)(void);
 
-#define NB_NUM_LEVELS 1
+#define NB_NUM_LEVELS 2
 extern level_func level_funcs[NB_NUM_LEVELS];
 
 #define NB_LEVEL_SUCCESS 1
@@ -14,6 +14,7 @@ enum {
 };
 int run_level (level_func level_init);
 void init_level_funcs (void);
+void load_tutorial (void);
 void load_level_one (void);
 
 #endif

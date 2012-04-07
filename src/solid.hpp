@@ -43,6 +43,7 @@ enum {
 	NB_DEADLY = 0,
 	NB_PLAYER,
 	NB_UNSTICKABLE,
+	NB_VICTORY,
 	NB_NUM_SLD_PROPS /* not a property, just a count */
 };
 void init_solid_props(solid_props_t& props);

@@ -22,6 +22,7 @@ int main (int argc, char **argv) {
 	if (show_screen(intro) < 0)
 		goto exit_func;
 
+	//TODO this logic makes me want to throw up
 	for (int i = 0; i < NB_NUM_LEVELS; i++) {
 		int ret;
 		do {
@@ -41,6 +42,7 @@ int main (int argc, char **argv) {
 				printf("ERROR!\n");
 			case -NB_LEVEL_QUIT:
 			default:
+				goto exit_func;
 				break;
 			}
 		} while (ret == -NB_LEVEL_DEAD);

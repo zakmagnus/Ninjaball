@@ -53,6 +53,7 @@ class player : public Moveable {
 		void mouse_at(int mx, int my, char button);
 		ropedata *rope;
 		bool alive;
+		bool won;
 };
 
 void player_collided(solid *player, solid& other);

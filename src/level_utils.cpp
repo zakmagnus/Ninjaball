@@ -87,6 +87,10 @@ void dead(void) {
 	quit = -NB_LEVEL_DEAD;
 }
 
+void success(void) {
+	quit = NB_LEVEL_SUCCESS;
+}
+
 int init_stuff (void) {
 	camera.x = CAM_INIT_X;
 	camera.y = CAM_INIT_Y;

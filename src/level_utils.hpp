@@ -65,5 +65,6 @@ void teardown_stuff (void);
 void update_camera(void);
 void init_guy(void);
 void dead(void);
+void success(void);
 
 #endif
