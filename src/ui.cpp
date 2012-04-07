@@ -20,7 +20,7 @@ void teardown_sdl (void) {
 	SDL_Quit();
 }
 
-void show_screen (char **message) {
+int show_screen (char **message) {
 	SDL_FillRect(screen, NULL, 0);
 
 	int line = 0;
@@ -36,10 +36,14 @@ void show_screen (char **message) {
 	bool end = false;
 	while (!end) {
 		while (SDL_PollEvent(&event)) {
-			if (event.type == SDL_QUIT || event.type == SDL_KEYDOWN) {
+			if (event.type == SDL_QUIT)
+				return -1;
+			if (event.type == SDL_KEYDOWN) {
 				end = true;
 				break;
 			}
 		}
 	}
+
+	return 0;
 }

@@ -7,6 +7,6 @@ extern TTF_Font *font;
 
 int init_sdl (void);
 void teardown_sdl (void);
-void show_screen (char **message);
+int show_screen (char **message);
 
 #endif

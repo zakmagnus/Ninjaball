@@ -9,7 +9,7 @@ level_func level_funcs[NB_NUM_LEVELS];
 
 int run_level (level_func level_init) {
 	if (init_stuff())
-		exit(1);
+		return -NB_LEVEL_ERROR;
 
 	level_init();
 
@@ -37,7 +37,7 @@ int run_level (level_func level_init) {
 		real_t dt = MIN_RENDER_TIME / 1000.0;
 		while (SDL_PollEvent(&event)) {
 			if (event.type == SDL_QUIT) {
-				quit = true;
+				quit = -NB_LEVEL_QUIT;
 				break;
 			}
 

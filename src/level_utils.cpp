@@ -1,4 +1,5 @@
 #include "level_utils.hpp"
+#include "level.hpp"
 #include "SDL/SDL_image.h"
 #include "SDL/SDL_ttf.h"
 #include "ui.hpp"
@@ -83,7 +84,7 @@ void init_guy(void) {
 }
 
 void dead(void) {
-	quit = -1;
+	quit = -NB_LEVEL_DEAD;
 }
 
 int init_stuff (void) {
