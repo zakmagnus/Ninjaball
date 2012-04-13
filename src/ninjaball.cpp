@@ -35,7 +35,7 @@ int main (int argc, char **argv) {
 				break;
 			case -NB_LEVEL_DEAD:
 				SDL_WM_SetCaption("x_x", NULL);
-				if (show_screen(dead_msg) < 0)
+				if (show_screen(dead_msg, 1000) < 0)
 					goto exit_func;
 				break;
 			case -NB_LEVEL_ERROR:

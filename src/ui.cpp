@@ -20,7 +20,7 @@ void teardown_sdl (void) {
 	SDL_Quit();
 }
 
-int show_screen (char **message) {
+int show_screen (char **message, int dur) {
 	SDL_FillRect(screen, NULL, 0);
 
 	int line = 0;
@@ -34,12 +34,17 @@ int show_screen (char **message) {
 
 	SDL_Event event;
 	bool end = false;
+	Uint32 start_time = SDL_GetTicks();
 	while (!end) {
 		while (SDL_PollEvent(&event)) {
 			if (event.type == SDL_QUIT)
 				return -1;
+			/* hidden feature: spacebar to skip any screen,
+			 * regardless of timer */
 			if (event.type == SDL_KEYDOWN) {
-				end = true;
+				if ((SDL_GetTicks() - start_time > dur) ||
+					(event.key.keysym.sym == SDLK_SPACE))
+					end = true;
 				break;
 			}
 		}

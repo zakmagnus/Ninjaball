@@ -40,6 +40,7 @@ void player_collided(solid *p, solid& other) {
 	}
 }
 
+//TODO some sort of "getkeystate()" might be better
 void player::handle_input(SDL_Event& event, real_t dt) {
 	if (event.type == SDL_KEYDOWN) {
 		switch (event.key.keysym.sym) {

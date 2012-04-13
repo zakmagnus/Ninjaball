@@ -7,6 +7,7 @@ int WORLD_LEFT_LIMIT;
 int WORLD_RIGHT_LIMIT;
 level_func level_funcs[NB_NUM_LEVELS];
 
+//TODO where should globals go? it's confusing, sort em out
 int run_level (level_func level_init) {
 	if (init_stuff())
 		return -NB_LEVEL_ERROR;
@@ -154,6 +155,7 @@ real_t anchor[] = {0, 0, 15, -40, -15, -40};
 real_t spike_pts[] = {0, 0, 30, -20, 0, -40};
 real_t unstick_pts[] = {0, 0, 50, 0, -100, -100, -150, -100};
 real_t upright_tri[] = {0, 0, 100, 0, 0, -100};
+real_t rev_upright_tri[] = {0, 0, 100, 0, 100, -100};
 real_t small_rect[] = {0, 0, 250, 0, 250, -40, 0, -40};
 
 void load_tutorial (void) {
@@ -258,7 +260,7 @@ void load_level_one (void) {
 	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
 	walls->push_back(sbuf);
 
-	walls->push_back(new_poly(NULL, true, upright_tri, 3, 70, 800));
+	walls->push_back(new_poly(NULL, true, rev_upright_tri, 3, 70, 800));
 	sbuf = new_poly(NULL, true, wall2_pts, 4, -450, 700, 1, 0xFF0000ff);
 	put_solid_prop(NB_DEADLY, sbuf->props);
 	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
