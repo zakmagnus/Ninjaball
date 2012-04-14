@@ -21,6 +21,8 @@ class vector2d_t {
 		real_t norm(void);
 		bool normalize(void);
 		real_t dot(vector2d_t& v);
+		vector2d_t *turn_pos(void);
+		vector2d_t *turn_neg(void);
 };
 
 static vector2d_t rightvec = vector2d_t(1.0, 0.0);

@@ -157,8 +157,8 @@ bool ball_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 					 * make the direction, so this works
 					 * as well as anything.
 					 */
-					dir->x = sd.dir->y;
-					dir->y = -sd.dir->x;
+					*dir = *sd.dir;
+					dir->turn_pos();
 					dir->normalize();
 				}
 				//printf("dir = %g,%g\n",dir->x,dir->y);
@@ -337,12 +337,56 @@ bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	return false;
 }
 
+typedef void (*proj_func) (solid& s, vector2d_t& axis, real_t& min,
+		real_t& max);
+static void project_poly(solid& s, vector2d_t& axis, real_t& min,
+		real_t& max) {
+	const struct poly_data_t& pd = s.solid_data->poly_data;
+	for (int i = 0; i < pd.num_segs; i++) {
+		vector2d_t point(((solid *)pd.segs[i])->x + s.x,
+				((solid *)pd.segs[i])->y + s.y);
+		real_t proj = point.dot(axis);
+		if ((i == 0) || proj < min)
+			min = proj;
+		if ((i == 0) || proj > max)
+			max = proj;
+	}
+}
+static void project_ball (solid& s, vector2d_t& axis, real_t& min,
+		real_t& max) {
+	const struct ball_data_t& bd = s.solid_data->ball_data;
+	vector2d_t center(s.x, s.y);
+	real_t mid = center.dot(axis);
+	min = mid - bd.r;
+	max = mid + bd.r;
+}
+
+real_t get_separation (solid& s1, solid& s2, proj_func p1, proj_func p2,
+		vector2d_t& axis) {
+	real_t s1min, s1max, s2min, s2max;
+	p1(s1, axis, s1min, s1max);
+	p2(s2, axis, s2min, s2max);
+	/*
+	   printf("s1 projects onto %g,%g as %g,%g\n",axis.x,axis.y,s1min,s1max);
+	   printf("s2 projects onto %g,%g as %g,%g\n",axis.x,axis.y,s2min,s2max);
+	 */
+	real_t overlap = SINGLE_DIM_OVERLAP(s1min, s1max, s2min, s2max);
+	if (overlap <= 0) { /* found separating axis; no collision */
+		//printf("separate!\n");
+		return 0;
+	}
+	if (s2min < s1min) /* pointing the wrong way */
+		return -overlap;
+}
+
 /* requires s1 is the ball and s2 is a sane poly (no nulls) */
 bool ball_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	assert(s1.get_solid_type() == NB_SLD_BALL);
 	assert(s2.get_solid_type() == NB_SLD_POLY);
 
 	const struct poly_data_t& pd = s2.solid_data->poly_data;
+	assert(pd.segs);
+	const struct ball_data_t& bd = s1.solid_data->ball_data;
 
 #define SEG_PTR(i) ((solid *)(pd.segs[(i)]))
 #define GET_GLOBAL_SEG(i) do {\
@@ -352,15 +396,54 @@ bool ball_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	global_seg.y += s2.y;\
 } while (0)
 	solid global_seg; /* global coordinates, not poly-centric ones */
+	real_t min_sep;
+	vector2d_t min_axis;
+	vector2d_t corner_axis;
+	real_t min_corner_dist = -1;
 	for (int i = 0; i < pd.num_segs; i++) {
-		assert(pd.segs);
 		GET_GLOBAL_SEG(i);
-		if (solids_collide(s1, global_seg, dir)) {
-			return true;
+		vector2d_t axis = *global_seg.solid_data->seg_data.dir;
+		axis.turn_pos()->normalize();
+		real_t sep = get_separation(s1, s2, project_ball, project_poly,
+				axis);
+		if (sep == 0)
+			return false;
+		if (sep < 0) {
+			axis = -axis;
+			sep = -sep;
+		}
+
+		if ((i == 0) || sep < min_sep) {
+			min_axis = axis;
+			min_sep = sep;
+		}
+
+		vector2d_t caxis(global_seg.x - s1.x, global_seg.y - s1.y);
+		real_t caxis_dist = caxis.norm();
+		if (min_corner_dist < 0 || caxis_dist < min_corner_dist) {
+			corner_axis = caxis;
+			min_corner_dist = caxis_dist;
 		}
 	}
+	corner_axis.normalize();
+	real_t sep = get_separation(s1, s2, project_ball, project_poly,
+		corner_axis);
+	if (sep == 0)
+		return false;
+	if (sep < 0) {
+		corner_axis = -corner_axis;
+		sep = -sep;
+	}
 
-	return false;
+	if (sep < min_sep) {
+		min_axis = corner_axis;
+		min_sep = sep;
+	}
+
+	if (dir)
+		*dir = min_axis;
+
+	return true;
 }
 
 /* requires s1 is the seg and s2 is the poly */
@@ -400,9 +483,7 @@ static bool is_in_poly(real_t x, real_t y, solid& poly) {
 
 	vector2d_t rot = *((solid *)sd.segs[0])->solid_data->seg_data.dir;
 	/* pi/2 rotation; should be AWAY from the polygon */
-	real_t tmp = rot.x;
-	rot.x = -rot.y;
-	rot.y = tmp;
+	rot.turn_pos();
 	real_t cx = ((solid *)sd.segs[0])->x + rot.x;
 	real_t cy = ((solid *)sd.segs[0])->y + rot.y;
 	/* translate x,y into "polyspace" */
@@ -452,20 +533,6 @@ static bool is_in_poly(real_t x, real_t y, solid& poly) {
 	return (num_hit % 2) == 1;
 }
 
-static void project_poly(solid& poly, vector2d_t& axis, real_t& min,
-		real_t& max) {
-	const struct poly_data_t& pd = poly.solid_data->poly_data;
-	for (int i = 0; i < pd.num_segs; i++) {
-		vector2d_t point(((solid *)pd.segs[i])->x + poly.x,
-				((solid *)pd.segs[i])->y + poly.y);
-		real_t proj = point.dot(axis);
-		if ((i == 0) || proj < min)
-			min = proj;
-		if ((i == 0) || proj > max)
-			max = proj;
-	}
-}
-
 /* requires s1 and s2 are sane polygons (no nulls) */
 bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	assert(s1.get_solid_type() == NB_SLD_POLY);
@@ -477,62 +544,43 @@ bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	assert(pd1.segs);
 	assert(pd2.segs);
 	
-	real_t min_overlap;
+	real_t min_sep;
 	vector2d_t min_axis;
+	//TODO these loops are similar; factor out?
 	for (int i = 0; i < pd1.num_segs; i++) {
 		vector2d_t axis = *((solid *)pd1.segs[i])->solid_data->seg_data.dir;
-		//TODO factor this out!
-		real_t tmp = axis.x;
-		axis.x = -axis.y;
-		axis.y = tmp;
+		axis.turn_pos();
 		axis.normalize();
 
-		real_t s1min, s1max, s2min, s2max;
-		project_poly(s1, axis, s1min, s1max);
-		project_poly(s2, axis, s2min, s2max);
-		/*
-		printf("s1 projects onto %g,%g as %g,%g\n",axis.x,axis.y,s1min,s1max);
-		printf("s2 projects onto %g,%g as %g,%g\n",axis.x,axis.y,s2min,s2max);
-		*/
-		real_t overlap = SINGLE_DIM_OVERLAP(s1min, s1max, s2min, s2max);
-		if (overlap <= 0) { /* found separating axis; no collision */
-			//printf("separate!\n");
+		real_t sep = get_separation(s1, s2, project_poly, project_poly, axis);
+		if (sep == 0)
 			return false;
+		if (sep < 0) {
+			axis = -axis;
+			sep = -sep;
 		}
 
-		if ((i == 0) || overlap < min_overlap) {
-			min_overlap = overlap;
+		if ((i == 0) || sep < min_sep) {
 			min_axis = axis;
-			if (s2min < s1min) /* pointing the wrong way */
-				min_axis = -min_axis;
+			min_sep = sep;
 		}
 	}
-	//TODO factor out obviously
 	for (int i = 0; i < pd2.num_segs; i++) {
 		vector2d_t axis = *((solid *)pd2.segs[i])->solid_data->seg_data.dir;
-		real_t tmp = axis.x;
-		axis.x = -axis.y;
-		axis.y = tmp;
+		axis.turn_pos();
 		axis.normalize();
 
-		real_t s1min, s1max, s2min, s2max;
-		project_poly(s1, axis, s1min, s1max);
-		project_poly(s2, axis, s2min, s2max);
-		/*
-		printf("s1 projects onto %g,%g as %g,%g\n",axis.x,axis.y,s1min,s1max);
-		printf("s2 projects onto %g,%g as %g,%g\n",axis.x,axis.y,s2min,s2max);
-		*/
-		real_t overlap = SINGLE_DIM_OVERLAP(s1min, s1max, s2min, s2max);
-		if (overlap <= 0) { /* found separating axis; no collision */
-			//printf("separate!\n");
+		real_t sep = get_separation(s1, s2, project_poly, project_poly, axis);
+		if (sep == 0)
 			return false;
+		if (sep < 0) {
+			axis = -axis;
+			sep = -sep;
 		}
 
-		if (overlap < min_overlap) {
-			min_overlap = overlap;
+		if (sep < min_sep) {
 			min_axis = axis;
-			if (s2min < s1min) /* pointing the wrong way */
-				min_axis = -min_axis;
+			min_sep = sep;
 		}
 	}
 	//printf("min overlap is %g on %g,%g\n",min_overlap,min_axis.x,min_axis.y);

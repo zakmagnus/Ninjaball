@@ -87,6 +87,24 @@ bool vector2d_t::operator == (vector2d_t& v) {
 	return v.x == this->x && v.y == this->y;
 }
 
+/* -pi/2 rotation */
+vector2d_t *vector2d_t::turn_neg(void) {
+	real_t tmp = this->x;
+	this->x = this->y;
+	this->y = -tmp;
+
+	return this;
+}
+
+/* pi/2 rotation */
+vector2d_t *vector2d_t::turn_pos(void) {
+	real_t tmp = this->x;
+	this->x = -this->y;
+	this->y = tmp;
+
+	return this;
+}
+
 vector2d_t angle_to_dir(real_t angle) {
 	vector2d_t dir;
 	dir.x = cos(angle);
