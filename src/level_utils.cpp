@@ -75,12 +75,21 @@ void update_camera(void) {
 		camera.x = CAM_MIN_X;
 }
 
+//TODO this stuff is just for debug convenience
+extern bool guy_pos_override;
+extern int guy_override_x, guy_override_y;
 void init_guy(void) {
 	if (guy)
 		delete guy;
 
-	guy = (player *)new_ball(new player(), false, GUY_INIT_X, GUY_INIT_Y,
-			img3->h / 2.0, img3, 1.0);
+	if (!guy_pos_override) {
+		guy = (player *)new_ball(new player(), false, GUY_INIT_X, GUY_INIT_Y,
+				img3->h / 2.0, img3, 1.0);
+	}
+	else {
+		guy = (player *)new_ball(new player(), false, guy_override_x,
+				guy_override_y, img3->h / 2.0, img3, 1.0);
+	}
 }
 
 void dead(void) {
