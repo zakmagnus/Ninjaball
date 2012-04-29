@@ -13,7 +13,6 @@ physics:
 -rotations?? x_x
 
 bugs:
--hook attaches in weird ways sometimes
 -bouncing off near-horizontal slopes when the slope's object is on a horizontal immobile doesn't work
 -multi-onness on non-vertical/horizontal is possible because of floating point imprecision
 

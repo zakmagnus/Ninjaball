@@ -1056,3 +1056,39 @@ bool point_on_segment(real_t x, real_t y, solid& segment) {
 	real_t y_coord = LINE_Y_COORD(x, m, x1, y1);
 	return between(y1, y_coord, y2) && SIMILAR_REALS(y_coord, y);
 }
+
+//TODO get source point, to find NEAREST intersection
+bool seg_poly_intersection(solid *p, segment *s, real_t& cx, real_t& cy) {
+	assert(p->get_solid_type() == NB_SLD_POLY);
+
+	real_t ax1, ay1, adx, ady;
+	ax1 = s->x;
+	ay1 = s->y;
+	adx = s->dir.x;
+	ady = s->dir.y;
+	int i;
+	for (i = 0; i < p->solid_data->poly_data.num_segs; i++) {
+		solid *pseg = (solid *)p->solid_data->poly_data.segs[i];
+		real_t bx1, by1, bdx, bdy;
+		bx1 = pseg->x + p->x;
+		by1 = pseg->y + p->y;
+		bdx = pseg->solid_data->seg_data.dir->x;
+		bdy = pseg->solid_data->seg_data.dir->y;
+
+		real_t den = adx * bdy - bdx * ady;
+		if (den == 0) {
+			printf("WARNING!! avoiding dbz in seg-intersection!!\n");
+			continue;
+		}
+
+		real_t at = (adx * (ay1 - by1) - ady * (ax1 - bx1)) / den;
+		real_t bt = (bdx * (ay1 - by1) - bdy * (ax1 - bx1)) / den;
+
+		if (between_ord(0, at, 1) && between_ord(0, bt, 1)) {
+			cx = ax1 + bt * adx;
+			cy = ay1 + bt * ady;
+			return true;
+		}
+	}
+	return false;
+}

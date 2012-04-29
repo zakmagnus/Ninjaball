@@ -137,3 +137,16 @@ void average_dir(vector2d_t& dir1, vector2d_t& dir2, vector2d_t *buf) {
 	vector2d_t avg_dir = angle_to_dir(avg_ang);
 	*buf = avg_dir;
 }
+
+segment::segment (real_t x, real_t y, vector2d_t& dir) {
+	this->x = x;
+	this->y = y;
+	this->dir = dir;
+}
+
+segment::segment (real_t x1, real_t y1, real_t x2, real_t y2) {
+	this->x = x1;
+	this->y = y1;
+	vector2d_t vec(x2 - x1, y2 - y1);
+	this->dir = vec;
+}

@@ -133,13 +133,32 @@ void player::choose_action(vector<solid *> *walls, real_t dt) {
 	if (hook_flying) {
 		this->rope->x1 = this->x;
 		this->rope->y1 = this->y;
-		this->rope->x2 = flyhook->x +
-			flyhook->solid_data->seg_data.dir->x;
-		this->rope->y2 = flyhook->y +
-			flyhook->solid_data->seg_data.dir->y;
-		this->rope->length = flyhook->solid_data->seg_data.dir->norm();
+		this->rope->x2 = flyhook->x + flyhook->dir.x;
+		this->rope->y2 = flyhook->y + flyhook->dir.y;
+		this->rope->length = vector2d_t(this->rope->x2 - this->rope->x1,
+				this->rope->y2 - this->rope->y1).norm();
 
 		for (int i = 0; i < walls->size(); i++) {
+			if (walls->at(i)->get_solid_type() == NB_SLD_POLY) {
+				real_t cx, cy;
+				bool hit = seg_poly_intersection(walls->at(i),
+						flyhook, cx, cy);
+				if (hit) {
+					this->hook_flying = false;
+					if (!get_solid_prop(NB_UNSTICKABLE,
+								walls->at(i)->props)) {
+						this->rope->x2 = cx;
+						this->rope->y2 = cy;
+						this->attach_rope();
+					}
+					break;
+				}
+			}
+			else {
+				printf("skipping hook intersection with non-poly wall\n");
+				//TODO ??? :^(
+			}
+			/*
 			if (solids_collide(*walls->at(i), *flyhook, NULL)) {
 				hook_flying = false;
 				if (!get_solid_prop(NB_UNSTICKABLE,
@@ -147,6 +166,7 @@ void player::choose_action(vector<solid *> *walls, real_t dt) {
 					this->attach_rope();
 				break;
 			}
+			*/
 		}
 	}
 }
@@ -267,27 +287,31 @@ void render_pointer(SDL_Surface *srf, solid *b, vector2d_t& dir, SDL_Rect *camer
 	lineColor(srf, x1, y1, x2, y2, 0xFFffFFff);
 }
 
-//TODO move this come on
+//TODO move this?
 void hook::init(Moveable *m, vector2d_t& dir) {
 	this->x = m->x;
 	this->y = m->y;
-	*this->solid_data->seg_data.dir = dir;
+	this->dir = dir;
+	this->flight_dir = dir;
 }
 
 bool hook::advance(Moveable *m, real_t dt) {
-	real_t d = vector2d_t(m->x - (this->x + this->solid_data->seg_data.dir->x),
-			m->y - (this->y + this->solid_data->seg_data.dir->y)).norm();
+	real_t d = vector2d_t(m->x - (this->x + this->dir.x),
+			m->y - (this->y + this->dir.y)).norm();
 	if (d >= NB_ROPE_MAX_LEN)
 		return false;
 
-	this->x += this->solid_data->seg_data.dir->x;
-	this->y += this->solid_data->seg_data.dir->y;
-	this->solid_data->seg_data.dir->normalize();
+	real_t old_x = this->x, old_y = this->y;
+	this->x += this->flight_dir.x * dt * NB_HOOK_SPD;
+	this->y += this->flight_dir.y * dt * NB_HOOK_SPD;
+	vector2d_t vec = vector2d_t(this->x - old_x, this->y - old_y);
+	this->dir = vec;
 	/*
+	this->solid_data->seg_data.dir->normalize();
 	this->x = m->x + ((*this->solid_data->seg_data.dir) * d).x;
 	this->y = m->y + ((*this->solid_data->seg_data.dir) * d).y;
-	*/
 	(*this->solid_data->seg_data.dir) *= dt * NB_HOOK_SPD;
+	*/
 	return true;
 }
 

@@ -143,9 +143,12 @@ int run_level (level_func level_init) {
 	return quit;
 }
 
+void test_level (void); //XXX debug
 void init_level_funcs (void) {
 	level_funcs[0] = load_tutorial;
 	level_funcs[1] = load_level_one;
+
+	//level_funcs[0] = test_level;
 }
 
 real_t wall1_pts[] = {0, 0, 50, 0, 50, -400, 0, -400};
@@ -170,6 +173,15 @@ real_t med_wall_thin[] = {0, 0, 200, 0, 200, -20, 0, -20};
 real_t med_wall_thin2[] = {0, 0, 240, 0, 240, -20, 0, -20};
 real_t med_wall_up[] = {0, 0, 40, 0, 40, -220, 0, -220};
 real_t med_wall_up_thin[] = {0, 0, 20, 0, 20, -170, 0, -170};
+
+void test_level (void) {
+	WORLD_TOP_LIMIT = 500;
+	WORLD_BOT_LIMIT = 500;
+	WORLD_LEFT_LIMIT = 500;
+	WORLD_RIGHT_LIMIT = 500;
+
+	walls->push_back(new_poly(NULL, true, wall1_pts, 4, GUY_INIT_X, GUY_INIT_Y+590));
+}
 
 void load_tutorial (void) {
 	WORLD_TOP_LIMIT = 500;

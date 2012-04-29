@@ -10,9 +10,9 @@
 #define NB_HOOK_SPD (1800.0)
 #define NB_ROPE_MAX_LEN (600)
 
-class hook : public solid {
+class hook : public segment {
 	public:
-		hook() {new_seg(this, true, 0, 0, 1, 1, false);};
+		vector2d_t flight_dir;
 		void init(Moveable *m, vector2d_t& dir);
 		bool advance(Moveable *m, real_t dt);
 };
