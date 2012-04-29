@@ -301,17 +301,9 @@ bool hook::advance(Moveable *m, real_t dt) {
 	if (d >= NB_ROPE_MAX_LEN)
 		return false;
 
-	real_t old_x = this->x, old_y = this->y;
-	this->x += this->flight_dir.x * dt * NB_HOOK_SPD;
-	this->y += this->flight_dir.y * dt * NB_HOOK_SPD;
-	vector2d_t vec = vector2d_t(this->x - old_x, this->y - old_y);
-	this->dir = vec;
-	/*
-	this->solid_data->seg_data.dir->normalize();
-	this->x = m->x + ((*this->solid_data->seg_data.dir) * d).x;
-	this->y = m->y + ((*this->solid_data->seg_data.dir) * d).y;
-	(*this->solid_data->seg_data.dir) *= dt * NB_HOOK_SPD;
-	*/
+	this->x += this->dir.x;
+	this->y += this->dir.y;
+	this->dir = this->flight_dir * (dt * NB_HOOK_SPD);
 	return true;
 }
 
