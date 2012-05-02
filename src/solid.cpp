@@ -72,7 +72,7 @@ unsigned solid::get_solid_type(void) {
 
 #include <stdio.h>
 
-bool ball_ball_coll (solid& s1, solid& s2, vector2d_t *dir) {
+bool ball_ball_coll (solid& s1, solid& s2, struct collision_data *data) {
 	assert(s1.get_solid_type() == NB_SLD_BALL);
 	assert(s2.get_solid_type() == NB_SLD_BALL);
 	vector2d_t c_axis;
@@ -80,12 +80,15 @@ bool ball_ball_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	c_axis.y = s2.y - s1.y;
 	real_t r1 = s1.solid_data->ball_data.r;
 	real_t r2 = s2.solid_data->ball_data.r;
+	real_t dsq = c_axis.dot(c_axis);
 
-	if (c_axis.dot(c_axis) > (r1 + r2) * (r1 + r2))
+	if (dsq > (r1 + r2) * (r1 + r2))
 		return false;
 
-	if (dir)
-		*dir = c_axis;
+	if (data) {
+		data->dir = c_axis;
+		data->overlap = r1 + r2 - sqrt(dsq);
+	}
 
 	return true;
 }
@@ -132,7 +135,7 @@ real_t get_separation (solid& s1, solid& s2, proj_func p1, proj_func p2,
 }
 
 /* requires s1 is the ball and s2 is a sane poly (no nulls) */
-bool ball_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
+bool ball_poly_coll (solid& s1, solid& s2, struct collision_data *data) {
 	assert(s1.get_solid_type() == NB_SLD_BALL);
 	assert(s2.get_solid_type() == NB_SLD_POLY);
 
@@ -191,14 +194,16 @@ bool ball_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 		min_sep = sep;
 	}
 
-	if (dir)
-		*dir = min_axis;
+	if (data) {
+		data->dir = min_axis;
+		data->overlap = min_sep;
+	}
 
 	return true;
 }
 
 /* requires s1 and s2 are sane polygons (no nulls) */
-bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
+bool poly_poly_coll (solid& s1, solid& s2, struct collision_data* data) {
 	assert(s1.get_solid_type() == NB_SLD_POLY);
 	assert(s1.get_solid_type() == NB_SLD_POLY);
 
@@ -249,8 +254,10 @@ bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	}
 	//printf("min overlap is %g on %g,%g\n",min_overlap,min_axis.x,min_axis.y);
 
-	if (dir)
-		*dir = min_axis;
+	if (data) {
+		data->dir = min_axis;
+		data->overlap = min_sep;
+	}
 	
 	return true;
 }
@@ -438,7 +445,7 @@ void init_coll_funcs(void) {
 }
 
 /* Requires dir is a direction and not a 0 vector, pointing FROM s1 INTO s2. */
-void resolve_collision(solid& s1, solid& s2, vector2d_t& dir) {
+void resolve_collision(solid& s1, solid& s2, struct collision_data& data) {
 	/*TODO This artificial immobility is fucked! If the onbase is
 	 * actually moving in the direction of its normal, then that
 	 * collision should be treated as a mobile one. */
@@ -446,9 +453,9 @@ void resolve_collision(solid& s1, solid& s2, vector2d_t& dir) {
 	vector2d_t para_c1, para_c2, perp_c1, perp_c2;
 	real_t c1, c2, new_c1, new_c2;
 
-	real_t norm_d = dir.norm();
+	real_t norm_d = data.dir.norm();
 	assert(norm_d > 0.0);
-	dir = dir / norm_d;
+	data.dir = data.dir / norm_d;
 
 	//TODO when should this happen? what if these adjust velocities?
 	s1.collision_callback(s2);
@@ -457,15 +464,15 @@ void resolve_collision(solid& s1, solid& s2, vector2d_t& dir) {
 	vector2d_t& v1 = s1.velocity;
 	c1 = 0.0;
 	if (v1.x != 0 || v1.y != 0)
-		c1 = v1.dot(dir);
+		c1 = v1.dot(data.dir);
 	vector2d_t& v2 = s2.velocity;
 	c2 = 0.0;
 	if (v2.x != 1 || v1.y != 0)
-		c2 = v2.dot(dir);
+		c2 = v2.dot(data.dir);
 
 	bool immobile1 = s1.immobile;
 	if ((!immobile1) && c1 <= 0) {
-		vector2d_t& normal = dir;
+		vector2d_t& normal = data.dir;
 		for (list<solid::onbase_data>::iterator I = s1.onbases->begin();
 				I != s1.onbases->end(); I++) {
 			if ((*I).normal == normal) {
@@ -476,7 +483,7 @@ void resolve_collision(solid& s1, solid& s2, vector2d_t& dir) {
 	}
 	bool immobile2 = s2.immobile;
 	if (!immobile2 && c2 >= 0) {
-		vector2d_t& normal = -dir; /* from s2 into s1 */
+		vector2d_t& normal = -data.dir; /* from s2 into s1 */
 		for (list<solid::onbase_data>::iterator I = s2.onbases->begin();
 				I != s2.onbases->end(); I++) {
 			if ((*I).normal == normal) {
@@ -505,20 +512,20 @@ void resolve_collision(solid& s1, solid& s2, vector2d_t& dir) {
 	new_c2 *= s2.elasticity;
 
 	if (immobile2 && fabs(new_c1) < NB_COLL_V_THRESH) {
-		vector2d_t normal = -dir; /* from s2 into s1 */
+		vector2d_t normal = -data.dir; /* from s2 into s1 */
 
 		if (!s2.immobile)
 			printf("mobile onbase!\n");
-		printf("s1 is on (%g); dir = %g,%g\n",new_c1,dir.x,dir.y);
+		printf("s1 is on (%g); dir = %g,%g\n",new_c1,data.dir.x,data.dir.y);
 		s1.become_on(&s2, normal); //TODO double onness??
 		new_c1 = 0;
 	}
 	if (immobile1 && fabs(new_c2) < NB_COLL_V_THRESH) {
-		vector2d_t normal = dir;
+		vector2d_t normal = data.dir;
 
 		if (!s1.immobile)
 			printf("mobile onbase!\n");
-		printf("s2 is on; dir = %g,%g\n",dir.x,dir.y);
+		printf("s2 is on; dir = %g,%g\n",data.dir.x,data.dir.y);
 		s2.become_on(&s1, normal); //TODO double onness??
 		new_c2 = 0;
 	}
@@ -530,8 +537,8 @@ void resolve_collision(solid& s1, solid& s2, vector2d_t& dir) {
 	real_t delta_c2 = new_c2 - c2;
 	if (delta_c2 < 0)
 		delta_c2 = -delta_c2;
-	para_c1 = dir * (c1 + delta_c1);
-	para_c2 = dir * (c2 + delta_c2);
+	para_c1 = data.dir * (c1 + delta_c1);
+	para_c2 = data.dir * (c2 + delta_c2);
 
 	/* use new parallels to calculate new velocities */
 	if (!immobile1) {
@@ -539,7 +546,7 @@ void resolve_collision(solid& s1, solid& s2, vector2d_t& dir) {
 		//printf("v1,1 = %g,%g\n",s1.velocity.x,s1.velocity.y);
 		//printf("para1,1 = %g,%g[%g]\n",(dir*c1).x,(dir*c1).y,c1);
 		//printf("para1,2 = %g,%g [%g <- %g]\n",para_c1.x,para_c1.y,c1+delta_c1,new_c1);
-		perp_c1 = v1 - (dir * c1);
+		perp_c1 = v1 - (data.dir * c1);
 		//printf("perp1 = %g,%g\n",perp_c1.x,perp_c1.y);
 		s1.velocity = para_c1 + perp_c1;
 		//printf("v1,2 = %g,%g\n",s1.velocity.x,s1.velocity.y);
@@ -549,7 +556,7 @@ void resolve_collision(solid& s1, solid& s2, vector2d_t& dir) {
 		//printf("v2,1 = %g,%g\n",s2.velocity.x,s2.velocity.y);
 		//printf("para2,1 = %g,%g[%g]\n",(dir*c2).x,(dir*c2).y,c2);
 		//printf("para2,2 = %g,%g [%g <- %g]\n",para_c2.x,para_c2.y,c2+delta_c2,new_c2);
-		perp_c2 = v2 - (dir * c2);
+		perp_c2 = v2 - (data.dir * c2);
 		s2.velocity = para_c2 + perp_c2;
 		//printf("v2,2 = %g,%g\n",s2.velocity.x,s2.velocity.y);
 	}

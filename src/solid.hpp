@@ -89,16 +89,23 @@ class solid : public visible, public physics_t {
 
 /* Collision function: takes two solids and returns whether they're colliding.
  * If they are, writes the vector along which the collision occurred, pointing
- * FROM s1 INTO s2. Does not do this if dir is null.
+ * FROM s1 INTO s2. Also writes overlap between solids, which is the minimum
+ * distance they need to be separated along the collision axis. Does not write
+ * if the passed-in buffer argument is NULL.
  */
-typedef bool (*collision_function) (solid& s1, solid& s2, vector2d_t *dir);
+struct collision_data {
+	vector2d_t dir;
+	real_t overlap;
+};
+typedef bool (*collision_function) (solid& s1, solid& s2,
+		struct collision_data *data);
 
 /* collision function list: one per pair of types */
-extern collision_function coll_funcs[NB_NUM_COLL_FUNCS];
 void init_coll_funcs(void);
-bool ball_ball_coll (solid& s1, solid& s2, vector2d_t *dir);
-bool ball_poly_coll (solid& s1, solid& s2, vector2d_t *dir);
-bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir);
+extern collision_function coll_funcs[NB_NUM_COLL_FUNCS];
+bool ball_ball_coll (solid& s1, solid& s2, struct collision_data *data);
+bool ball_poly_coll (solid& s1, solid& s2, struct collision_data *data);
+bool poly_poly_coll (solid& s1, solid& s2, struct collision_data *data);
 
 #include <stdio.h>
 /* requires t1 <= t2 and both are solid types */
@@ -116,18 +123,18 @@ static collision_function get_coll_func(unsigned t1, unsigned t2) {
 	return coll_funcs[get_coll_func_ind(t2, t1)];
 }
 
-static bool solids_collide(solid& s1, solid& s2, vector2d_t *dir) {
+static bool solids_collide(solid& s1, solid& s2, struct collision_data *data) {
 	collision_function f = get_coll_func(s1.get_solid_type(),
 			s2.get_solid_type());
 	if (s1.get_solid_type() <= s2.get_solid_type()) {
-		return f(s1, s2, dir);
+		return f(s1, s2, data);
 	}
 	else {
-		bool ret = f(s2, s1, dir);
+		bool ret = f(s2, s1, data);
 
 		/* dir must go from first to second */
-		if (dir)
-			*dir = -*dir;
+		if (data)
+			data->dir = -(data->dir);
 
 		return ret;
 	}
@@ -135,7 +142,7 @@ static bool solids_collide(solid& s1, solid& s2, vector2d_t *dir) {
 
 /* adjust velocities due to collision, in the directions of
  * the given vectors */
-void resolve_collision(solid& s1, solid& s2, vector2d_t& dir);
+void resolve_collision(solid& s1, solid& s2, struct collision_data& data);
 /* check is a solid is actually still on one of its onbases */
 //TODO make this a member function?
 bool is_still_on(solid::onbase_data& data, solid *s);

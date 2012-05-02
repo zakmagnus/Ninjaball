@@ -58,9 +58,9 @@ int run_level (level_func level_init) {
 
 		//TODO move this somewhere better?
 #define CHECK_COLLISION(s1,s2,mi1,mi2) do {\
-	vector2d_t dir;\
-	if (solids_collide(s1, s2, &dir)) {\
-		resolve_collision(s1, s2, dir);\
+	struct collision_data data;\
+	if (solids_collide(s1, s2, &data)) {\
+		resolve_collision(s1, s2, data);\
 		if (mi1 >= 0) \
 			moves->at(mi1).collided = true;\
 		if (mi2 >= 0) \
