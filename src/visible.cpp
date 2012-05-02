@@ -14,7 +14,7 @@ void show_visible(visible *v, SDL_Surface *screen, SDL_Rect *camera) {
 	int type = v->visible_type;
 	//TODO is there any way to not have to declare all this crap out here
 	real_t x1, x2, y1, y2;
-	solid **segs;
+	segment **segs;
 	SDL_Surface *img;
 	struct ball_data_t *bd;
 	solid *s = NULL;
@@ -29,7 +29,7 @@ void show_visible(visible *v, SDL_Surface *screen, SDL_Rect *camera) {
 			//printf("drew a sprite\n");
 			break;
 		case NB_SLD_POLY:
-			segs = (solid **) s->solid_data->poly_data.segs;
+			segs = s->solid_data->poly_data.segs;
 			for (int i = 0; i < s->solid_data->poly_data.num_segs; i++) {
 				x1 = s->x + segs[i]->x;
 				y1 = s->y + segs[i]->y;
@@ -37,27 +37,13 @@ void show_visible(visible *v, SDL_Surface *screen, SDL_Rect *camera) {
 					x1 -= camera->x;
 					y1 -= camera->y;
 				}
-				x2 = x1 + segs[i]->solid_data->seg_data.dir->x;
-				y2 = y1 + segs[i]->solid_data->seg_data.dir->y;
+				x2 = x1 + segs[i]->dir.x;
+				y2 = y1 + segs[i]->dir.y;
 				//TODO cast better?
 				lineColor(screen, x1, y1, x2, y2,
 						(unsigned long) v->visible_data);
 				//printf("drew seg %d colored %x\n", i, v->visible_data);
 			}
-			break;
-		case NB_SLD_SEG:
-			x1 = s->x;
-			y1 = s->y;
-			if (camera) {
-				x1 -= camera->x;
-				y1 -= camera->y;
-			}
-			x2 = x1 + s->solid_data->seg_data.dir->x;
-			y2 = y1 + s->solid_data->seg_data.dir->y;
-			//TODO cast better?
-			lineColor(screen, x1, y1, x2, y2,
-					(unsigned long) v->visible_data);
-			//printf("drew a seg\n");
 			break;
 		case NB_NUM_VIS_TYPES:
 			printf("abstract visible attempting to get shown!\n");

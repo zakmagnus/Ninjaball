@@ -90,261 +90,13 @@ bool ball_ball_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	return true;
 }
 
-/* requires s1 is the ball and s2 is the segment */
-/* requires the seg has nonzero length */
-bool ball_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
-	struct ball_data_t& bd = s1.solid_data->ball_data;
-	struct seg_data_t& sd = s2.solid_data->seg_data;
-	vector2d_t cv(s1.x - s2.x, s1.y - s2.y);
-	real_t seg_length = sd.dir->norm();
-	assert(seg_length > 0);
-
-	real_t proj = cv.dot(*(sd.dir)) / seg_length;
-	if (proj < 0 || proj > seg_length) {
-		/* center does not project onto segment;
-		 * check distance from endpoints */
-		//TODO norm = 0 ??
-		real_t norm = cv.norm();
-		if (cv.norm() < bd.r) {
-			/*
-			printf("ball's %g,%g is only %g away from %g,%g\n",s1.x,s1.y,norm,
-					s2.x,s2.y);
-			*/
-			if (dir) {
-				/* dir must go FROM s1 INTO s2 */
-				*dir = cv / (-norm);		
-				//printf("dir = %g,%g\n",dir->x,dir->y);
-			}
-			return true;
-		}
-
-		vector2d_t ep2v(sd.dir->x + s2.x - s1.x, sd.dir->y + s2.y - s1.y);
-		//TODO norm = 0 ??
-		norm = ep2v.norm();
-		if (norm < bd.r) {
-			/*
-			printf("ball's %g,%g is only %g away from %g,%g\n",s1.x,s1.y,norm,
-					s2.x+sd.dir->x,s2.y+sd.dir->y);
-			*/
-			if (dir) {
-				*dir = ep2v / norm;
-				//printf("dir = %g,%g\n",dir->x,dir->y);
-			}
-			return true;
-		}
-
-		return false;
-	}
-	else {
-		/* center projects directly onto segment;
-		 * check perpendicular distance */
-		vector2d_t para = (*(sd.dir)) * (proj / seg_length);
-		vector2d_t perp = cv - para;
-		real_t perp_dist = perp.norm();
-		if (perp_dist < bd.r) {
-			/*
-			printf("ball at %g,%g projects onto %g,%g with %g which is %g away\n",
-				s1.x,s1.y,sd.dir->x,sd.dir->y,proj,perp_dist);
-			*/
-			if (dir) {
-				*dir = -perp; /* FROM ball INTO segment */
-				if (!dir->normalize()) {
-					/* ball centered on segment! */
-					/* This is a -pi/2 rotation. If the
-					 * seg is directed, that's the right
-					 * way (INTO the segment); if it's
-					 * not, then I don't know what to
-					 * make the direction, so this works
-					 * as well as anything.
-					 */
-					*dir = *sd.dir;
-					dir->turn_pos();
-					dir->normalize();
-				}
-				//printf("dir = %g,%g\n",dir->x,dir->y);
-			}
-			return true;
-		}
-
-		return false;
-	}
-}
-
-/* Finds the normal vector FROM s1 INTO s2.
- * requires that s1 and s2 collide */
-static void seg_seg_coll_dir(solid& s1, solid& s2, vector2d_t *dir) {
-	if (!dir)
-		return;
-
-	seg_data_t& sd1 = s1.solid_data->seg_data;
-	seg_data_t& sd2 = s2.solid_data->seg_data;
-
-	vector2d_t d1 = *sd1.dir;
-	vector2d_t d2 = *sd2.dir;
-	printf("figuring out collision dir between %g,%g and %g,%g\n",
-			d1.x,d1.y,d2.x,d2.y);
-	d1.normalize();
-	d2.normalize();
-	/* these are lines, not vectors; establish
-	 * minimum separation between them */
-	bool d1_negated = false;
-	if (d1.dot(d2) < 0) {
-		d1 = -d1;
-		d1_negated = true;
-	}
-
-	real_t ang1 = dir_to_angle(d1);
-	real_t ang2 = dir_to_angle(d2);
-	real_t avg_ang = (ang1 + ang2) / 2;
-	real_t rotation = -M_PI / 2;
-	real_t diff = 0;
-	if (sd1.directed) {
-		diff = avg_ang - ang1;
-
-		if (diff == 0) {
-			rotation = M_PI / 2; /* positive = away from d1 */
-		}
-		if (d1_negated)
-			rotation = -rotation;
-	}
-	else if (sd2.directed) {
-		diff = ang2 - avg_ang;
-		if (diff == 0) {
-			rotation = -M_PI / 2; /* negative = into d2 */
-		}
-	}
-	if (diff != 0) {
-		if (between_ord(0, diff, M_PI) ||
-				between_ord(-2 * M_PI, diff, -M_PI)) {
-			rotation = M_PI / 2;
-		}
-	}
-
-	avg_ang += rotation;
-	if (avg_ang > 2 * M_PI)
-		avg_ang -= 2 * M_PI;
-	else if (avg_ang < 0)
-		avg_ang += 2 * M_PI;
-
-	vector2d_t normal = angle_to_dir(avg_ang);
-	*dir = normal;
-}
-
-/* requires that s1 and s2 are segments that have nonzero length */
-bool seg_seg_coll (solid& s1, solid& s2, vector2d_t *dir) {
-	seg_data_t& sd1 = s1.solid_data->seg_data;
-	seg_data_t& sd2 = s2.solid_data->seg_data;
-	real_t Ax1 = s1.x, Ay1 = s1.y, Bx1 = s2.x, By1 = s2.y;
-	real_t Ax2 = Ax1 + sd1.dir->x, Ay2 = Ay1 + sd1.dir->y,
-	       Bx2 = Bx1 + sd2.dir->x, By2 = By1 + sd2.dir->y;
-
-	real_t Am = (Ay1 - Ay2) / (Ax1 - Ax2);
-	real_t Bm = (By1 - By2) / (Bx1 - Bx2);
-
-	/* these aliases help keep names straight when arbitrary
-	 * points are needed */
-	real_t Ax = Ax1, Ay = Ay1, Bx = Bx1, By = By1;
-
-	/* vertical segment logic */
-	if (Ax1 == Ax2) {
-		if (Bx1 == Bx2) {
-			/* parallel verticals; check for y intersection */
-			if (Ax1 != Bx1)
-				return false;
-			real_t Aymin = min(Ay1, Ay2);
-			real_t Bymin = min(By1, By2);
-			real_t Aymax = max(Ay1, Ay2);
-			real_t Bymax = max(By1, By2);
-			real_t y_overlap = SINGLE_DIM_OVERLAP(Aymin, Aymax,
-					Bymin, Bymax);
-			if (y_overlap >= 0) {
-				seg_seg_coll_dir(s1, s2, dir);
-				/*
-				printf("%g,%g->%g,%g collides with %g,%g->%g,%g at %g,??\n",
-					Ax1, Ay1, Ax2, Ay2, Bx1, By1, Bx2, By2,
-					Ax1);
-				*/
-				return true;
-			}
-
-			return false;
-		}
-#define VERT_SLOPE_COLL(vx,vy1,vy2,sx1,sx2,sy1,sy2,sm) do {\
-	real_t x_int = vx;\
-	if (!between((sx1), x_int, (sx2)))\
-		return false;\
-	real_t y_int = LINE_Y_COORD(x_int, sm, sx1, sy1);\
-	if (between(vy1, y_int, vy2)) {\
-		seg_seg_coll_dir(s1, s2, dir);\
-		return true;\
-	}\
-	return false;\
-} while (0)
-		else {
-			/* only A is vertical */
-			VERT_SLOPE_COLL(Ax1, Ay1, Ay2, Bx1, Bx2, By1, By2, Bm);
-		}
-	}
-	/* else, A is NOT vertical */
-	if (Bx1 == Bx2) {
-		VERT_SLOPE_COLL(Bx1, By1, By2, Ax1, Ax2, Ay1, Ay2, Am);
-	}
-
-	/* else, no verticals. GOOD */
-
-	if (Am == Bm) { /* parallels */
-		real_t Axmin = min(Ax1, Ax2);
-		real_t Bxmin = min(Bx1, Bx2);
-		//TODO huh? does this make sense??
-		real_t y1 = LINE_Y_COORD(Axmin, Bm, Bx, By);
-		real_t y2 = LINE_Y_COORD(Axmin, Am, Ax, Ay);
-		real_t y3 = LINE_Y_COORD(Bxmin, Bm, Bx, By);
-		real_t y4 = LINE_Y_COORD(Bxmin, Am, Ax, Ay);
-		//TODO standardize this real_t closeness
-		if (fabs(y1 - y2) <= 0.001 || fabs(y3 - y4) <= 0.001) {
-			/*
-			printf("%g,%g->%g,%g collides with %g,%g->%g,%g at %g,%g or %g,%g\n",
-					Ax1, Ay1, Ax2, Ay2, Bx1, By1, Bx2, By2,
-					Axmin, y1, Bxmin, y3);
-			*/
-			seg_seg_coll_dir(s1, s2, dir);
-			return true;
-		}
-
-		return false;
-	}
-
-	/* find intersection of lines, see if that's included in the
-	 * segments */
-	real_t X_int = (Ax * Am - Bx * Bm + By - Ay) / (Am - Bm);
-
-	real_t Y_int = LINE_Y_COORD(X_int, Am, Ax, Ay);
-	/*
-	real_t Y_int_alt = LINE_Y_COORD(X_int, Bm, Bx, By);
-	assert(SIMILAR_REALS(Y_int, Y_int_alt));
-	*/
-
-	if (between(Bx1, X_int, Bx2) && between(Ax1, X_int, Ax2)) {
-		/*
-		printf("%g,%g->%g,%g collides with %g,%g->%g,%g at %g,%g\n",
-				Ax1, Ay1, Ax2, Ay2, Bx1, By1, Bx2, By2,
-				X_int, Y_int);
-		*/
-		seg_seg_coll_dir(s1, s2, dir);
-		return true;
-	}
-
-	return false;
-}
-
 typedef void (*proj_func) (solid& s, vector2d_t& axis, real_t& min,
 		real_t& max);
 static void project_poly(solid& s, vector2d_t& axis, real_t& min,
 		real_t& max) {
 	const struct poly_data_t& pd = s.solid_data->poly_data;
 	for (int i = 0; i < pd.num_segs; i++) {
-		vector2d_t point(((solid *)pd.segs[i])->x + s.x,
-				((solid *)pd.segs[i])->y + s.y);
+		vector2d_t point(pd.segs[i]->x + s.x, pd.segs[i]->y + s.y);
 		real_t proj = point.dot(axis);
 		if ((i == 0) || proj < min)
 			min = proj;
@@ -388,21 +140,20 @@ bool ball_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	assert(pd.segs);
 	const struct ball_data_t& bd = s1.solid_data->ball_data;
 
-#define SEG_PTR(i) ((solid *)(pd.segs[(i)]))
 #define GET_GLOBAL_SEG(i) do {\
-	assert(SEG_PTR((i)));\
-	global_seg = *SEG_PTR((i));\
+	assert(pd.segs[(i)]);\
+	global_seg = *pd.segs[(i)];\
 	global_seg.x += s2.x;\
 	global_seg.y += s2.y;\
 } while (0)
-	solid global_seg; /* global coordinates, not poly-centric ones */
+	segment global_seg; /* global coordinates, not poly-centric ones */
 	real_t min_sep;
 	vector2d_t min_axis;
 	vector2d_t corner_axis;
 	real_t min_corner_dist = -1;
 	for (int i = 0; i < pd.num_segs; i++) {
 		GET_GLOBAL_SEG(i);
-		vector2d_t axis = *global_seg.solid_data->seg_data.dir;
+		vector2d_t axis = global_seg.dir;
 		axis.turn_pos()->normalize();
 		real_t sep = get_separation(s1, s2, project_ball, project_poly,
 				axis);
@@ -446,93 +197,6 @@ bool ball_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	return true;
 }
 
-/* requires s1 is the seg and s2 is the poly */
-bool seg_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
-	assert(s1.get_solid_type() == NB_SLD_SEG);
-	assert(s2.get_solid_type() == NB_SLD_POLY);
-
-	const struct seg_data_t& sd = s1.solid_data->seg_data;
-	const struct poly_data_t& pd = s2.solid_data->poly_data;
-
-	//TODO duplicated macro? ok something is wrong here
-#define SEG_PTR(i) ((solid *)(pd.segs[(i)]))
-#define GET_GLOBAL_SEG(i) do {\
-	assert(SEG_PTR((i)));\
-	global_seg = *SEG_PTR((i));\
-	global_seg.x += s2.x;\
-	global_seg.y += s2.y;\
-} while (0)
-	for (int i = 0; i < pd.num_segs; i++) {
-		solid global_seg;
-		GET_GLOBAL_SEG(i);
-		if (solids_collide(s1, global_seg, dir))
-			return true;
-	}
-
-	return false;
-}
-
-/* Checks whether x, y is inside the polygon given by sd.
- * Requires that sd.segs is non-null, contains no nulls,
- * and is generally a sane polygon. */
-static bool is_in_poly(real_t x, real_t y, solid& poly) {
-	const poly_data_t sd = poly.solid_data->poly_data;
-	assert(sd.segs);
-	assert(*sd.segs);
-	assert(((solid *)sd.segs[0])->solid_data->seg_data.directed);
-
-	vector2d_t rot = *((solid *)sd.segs[0])->solid_data->seg_data.dir;
-	/* pi/2 rotation; should be AWAY from the polygon */
-	rot.turn_pos();
-	real_t cx = ((solid *)sd.segs[0])->x + rot.x;
-	real_t cy = ((solid *)sd.segs[0])->y + rot.y;
-	/* translate x,y into "polyspace" */
-	real_t poly_x = x - poly.x;
-	real_t poly_y = y - poly.y;
-	solid tester;
-	new_seg(&tester, true, cx, cy, poly_x - cx, poly_y - cy);
-	printf("tester segment is %g,%g (%g,%g)\n",tester.x,tester.y,
-			tester.solid_data->seg_data.dir->x,
-			tester.solid_data->seg_data.dir->y);
-
-	int num_hit = 0;
-	int num_corners = 0;
-	for (int i = 0; i < sd.num_segs; i++) {
-		assert(sd.segs[i]);
-		if (point_on_segment(poly_x, poly_y, *(solid *)sd.segs[i]))
-			return true;
-		if (solids_collide(*(solid *)sd.segs[i], tester, NULL)) {
-			if (point_on_segment(((solid *)sd.segs[i])->x,
-						((solid *)sd.segs[i])->y, tester))
-				num_corners++;
-			/* check if the segments are parallel; if so, the
-			 * tester will pass through a corner or two and
-			 * this will give the correct hit count */
-			/*
-			vector2d_t v1 = *tester.solid_data->seg_data.dir;
-			vector2d_t v2 = *((solid *)sd.segs[i])->
-				solid_data->seg_data.dir;
-			bool normed = v1.normalize();
-			assert(normed);
-			normed = v2.normalize();
-			assert(normed);
-			real_t dot = fabs(v1.dot(v2));
-			if (SIMILAR_REALS(dot, 1))
-				continue;
-				*/
-
-			num_hit++;
-		}
-	}
-	printf("%d hits, %d corners\n", num_hit, num_corners);
-	if (num_corners == 2) /* came in and went out */
-		return false;
-	if (num_corners == 1) /* count the corner as a hit */
-		num_hit--; /* it has two segments so it's double-counted */
-
-	return (num_hit % 2) == 1;
-}
-
 /* requires s1 and s2 are sane polygons (no nulls) */
 bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	assert(s1.get_solid_type() == NB_SLD_POLY);
@@ -548,7 +212,7 @@ bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 	vector2d_t min_axis;
 	//TODO these loops are similar; factor out?
 	for (int i = 0; i < pd1.num_segs; i++) {
-		vector2d_t axis = *((solid *)pd1.segs[i])->solid_data->seg_data.dir;
+		vector2d_t axis = pd1.segs[i]->dir;
 		axis.turn_pos();
 		axis.normalize();
 
@@ -566,7 +230,7 @@ bool poly_poly_coll (solid& s1, solid& s2, vector2d_t *dir) {
 		}
 	}
 	for (int i = 0; i < pd2.num_segs; i++) {
-		vector2d_t axis = *((solid *)pd2.segs[i])->solid_data->seg_data.dir;
+		vector2d_t axis = pd2.segs[i]->dir;
 		axis.turn_pos();
 		axis.normalize();
 
@@ -767,14 +431,8 @@ void init_coll_funcs(void) {
 	//XXX make sure to put the types in ascending order!
 	coll_funcs[get_coll_func_ind(NB_SLD_BALL, NB_SLD_BALL)] =
 		ball_ball_coll;
-	coll_funcs[get_coll_func_ind(NB_SLD_BALL, NB_SLD_SEG)] =
-		ball_seg_coll;
 	coll_funcs[get_coll_func_ind(NB_SLD_BALL, NB_SLD_POLY)] =
 		ball_poly_coll;
-	coll_funcs[get_coll_func_ind(NB_SLD_SEG, NB_SLD_SEG)] =
-		seg_seg_coll;
-	coll_funcs[get_coll_func_ind(NB_SLD_SEG, NB_SLD_POLY)] =
-		seg_poly_coll;
 	coll_funcs[get_coll_func_ind(NB_SLD_POLY, NB_SLD_POLY)] =
 		poly_poly_coll;
 }
@@ -946,27 +604,6 @@ solid *new_ball(solid *buf, bool immobile, real_t x, real_t y, real_t r, SDL_Sur
 	return ret;
 }
 
-solid *new_seg(solid *buf, bool immobile, real_t x, real_t y, real_t dx, real_t dy, bool directed,
-		real_t e) {
-	assert(dx != 0 || dy != 0);
-	solid *ret = buf;
-	if (!ret) {
-		ret = new solid(x, y, e, immobile);
-	}
-	else {
-		ret->x = x;
-		ret->y = y;
-		ret->elasticity = e;
-		ret->immobile = immobile;
-	}
-	ret->solid_type = NB_SLD_SEG;
-	vector2d_t *dir = new vector2d_t(dx, dy);
-	ret->solid_data->seg_data.dir = dir;
-	ret->solid_data->seg_data.directed = directed;
-
-	return ret;
-}
-
 solid *new_poly(solid *buf, bool immobile, real_t *points, unsigned num_pts, real_t x, real_t y,
 		real_t e, unsigned color) {
 	assert(points);
@@ -985,16 +622,14 @@ solid *new_poly(solid *buf, bool immobile, real_t *points, unsigned num_pts, rea
 
 #define X_COORD(i) (points[(2 * (i))])
 #define Y_COORD(i) (points[(2 * (i)) + 1])
-	solid **segs = new solid *[num_pts];
+	segment **segs = new segment *[num_pts];
 	for (int i = 0; i < num_pts; i++) {
 		int next_i = (i + 1) % num_pts;
-		solid *segment = new_seg(NULL, true, X_COORD(i), Y_COORD(i),
-				X_COORD(next_i) - X_COORD(i),
-				Y_COORD(next_i) - Y_COORD(i), true);
-		segs[i] = segment;
+		segs[i] = new segment(X_COORD(i), Y_COORD(i),
+				X_COORD(next_i), Y_COORD(next_i));
 	}
 
-	ret->solid_data->poly_data.segs = (void **) segs;
+	ret->solid_data->poly_data.segs = segs;
 	ret->solid_data->poly_data.num_segs = num_pts;
 
 	ret->visible_type = NB_SLD_POLY;
@@ -1017,7 +652,7 @@ solid *new_poly(solid *buf, bool immobile, real_t x, real_t y, real_t e, int num
 	}
 	ret->solid_type = NB_SLD_POLY;
 
-	solid **segs = new solid *[num_points];
+	segment **segs = new segment *[num_points];
 	va_list args;
 	va_start(args, num_points);
 	/* varargs create doubles :^/ */
@@ -1026,35 +661,18 @@ solid *new_poly(solid *buf, bool immobile, real_t x, real_t y, real_t e, int num
 	for (int i = 0; i < num_points - 1; i++) {
 		real_t x = va_arg(args, double);
 		real_t y = va_arg(args, double);
-		solid *s = new_seg(NULL, true, prev_x, prev_y, x - prev_x, y - prev_y, true);
-		segs[i] = s;
+		segs[i] = new segment(prev_x, prev_y, x, y);
 
 		prev_x = x;
 		prev_y = y;
 	}
 	va_end(args);
-	segs[num_points - 1] = new_seg(NULL, true, prev_x, prev_y, segs[0]->x - prev_x,
-			segs[0]->y - prev_y);
-	ret->solid_data->poly_data.segs = (void **) segs;
+	segs[num_points - 1] = new segment(prev_x, prev_y, segs[0]->x,
+			segs[0]->y);
+	ret->solid_data->poly_data.segs = segs;
 	ret->solid_data->poly_data.num_segs = num_points;
 
 	return ret;
-}
-
-//TODO move this
-bool point_on_segment(real_t x, real_t y, solid& segment) {
-	seg_data_t& sd = segment.solid_data->seg_data;
-	real_t x1 = segment.x, y1 = segment.y;
-	real_t x2 = x1 + sd.dir->x, y2 = y1 + sd.dir->y;
-	real_t m = (y1 - y2) / (x1 - x2);
-
-	if (x1 == x2) { /* vertical */
-		//XXX should it be SIMILAR_REALS(x, x1)?
-		return ((x == x1) && between(y1, y, y2));
-	}
-
-	real_t y_coord = LINE_Y_COORD(x, m, x1, y1);
-	return between(y1, y_coord, y2) && SIMILAR_REALS(y_coord, y);
 }
 
 //TODO get source point, to find NEAREST intersection
@@ -1068,12 +686,12 @@ bool seg_poly_intersection(solid *p, segment *s, real_t& cx, real_t& cy) {
 	ady = s->dir.y;
 	int i;
 	for (i = 0; i < p->solid_data->poly_data.num_segs; i++) {
-		solid *pseg = (solid *)p->solid_data->poly_data.segs[i];
+		segment *pseg = p->solid_data->poly_data.segs[i];
 		real_t bx1, by1, bdx, bdy;
 		bx1 = pseg->x + p->x;
 		by1 = pseg->y + p->y;
-		bdx = pseg->solid_data->seg_data.dir->x;
-		bdy = pseg->solid_data->seg_data.dir->y;
+		bdx = pseg->dir.x;
+		bdy = pseg->dir.y;
 
 		real_t den = adx * bdy - bdx * ady;
 		if (den == 0) {
