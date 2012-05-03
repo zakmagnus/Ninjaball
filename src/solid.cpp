@@ -121,10 +121,6 @@ real_t get_separation (solid& s1, solid& s2, proj_func p1, proj_func p2,
 	real_t s1min, s1max, s2min, s2max;
 	p1(s1, axis, s1min, s1max);
 	p2(s2, axis, s2min, s2max);
-	/*
-	   printf("s1 projects onto %g,%g as %g,%g\n",axis.x,axis.y,s1min,s1max);
-	   printf("s2 projects onto %g,%g as %g,%g\n",axis.x,axis.y,s2min,s2max);
-	 */
 	real_t overlap = SINGLE_DIM_OVERLAP(s1min, s1max, s2min, s2max);
 	if (overlap <= 0) { /* found separating axis; no collision */
 		//printf("separate!\n");
@@ -132,6 +128,7 @@ real_t get_separation (solid& s1, solid& s2, proj_func p1, proj_func p2,
 	}
 	if (s2min < s1min) /* pointing the wrong way */
 		return -overlap;
+	return overlap;
 }
 
 /* requires s1 is the ball and s2 is a sane poly (no nulls) */
@@ -445,6 +442,8 @@ void init_coll_funcs(void) {
 }
 
 /* Requires dir is a direction and not a 0 vector, pointing FROM s1 INTO s2. */
+//TODO make this move things according to data->overlap
+//TODO maybe get rid of onness entirely.....
 void resolve_collision(solid& s1, solid& s2, struct collision_data& data) {
 	/*TODO This artificial immobility is fucked! If the onbase is
 	 * actually moving in the direction of its normal, then that
@@ -471,27 +470,7 @@ void resolve_collision(solid& s1, solid& s2, struct collision_data& data) {
 		c2 = v2.dot(data.dir);
 
 	bool immobile1 = s1.immobile;
-	if ((!immobile1) && c1 <= 0) {
-		vector2d_t& normal = data.dir;
-		for (list<solid::onbase_data>::iterator I = s1.onbases->begin();
-				I != s1.onbases->end(); I++) {
-			if ((*I).normal == normal) {
-				immobile1 = true;
-				break;
-			}
-		}
-	}
 	bool immobile2 = s2.immobile;
-	if (!immobile2 && c2 >= 0) {
-		vector2d_t& normal = -data.dir; /* from s2 into s1 */
-		for (list<solid::onbase_data>::iterator I = s2.onbases->begin();
-				I != s2.onbases->end(); I++) {
-			if ((*I).normal == normal) {
-				immobile2 = true;
-				break;
-			}
-		}
-	}
 
 	/* use parallels to calculate new parallels */
 	if ((!immobile1) && (!immobile2)) {
@@ -511,32 +490,15 @@ void resolve_collision(solid& s1, solid& s2, struct collision_data& data) {
 	new_c1 *= s1.elasticity;
 	new_c2 *= s2.elasticity;
 
-	if (immobile2 && fabs(new_c1) < NB_COLL_V_THRESH) {
-		vector2d_t normal = -data.dir; /* from s2 into s1 */
-
-		if (!s2.immobile)
-			printf("mobile onbase!\n");
-		printf("s1 is on (%g); dir = %g,%g\n",new_c1,data.dir.x,data.dir.y);
-		s1.become_on(&s2, normal); //TODO double onness??
-		new_c1 = 0;
-	}
-	if (immobile1 && fabs(new_c2) < NB_COLL_V_THRESH) {
-		vector2d_t normal = data.dir;
-
-		if (!s1.immobile)
-			printf("mobile onbase!\n");
-		printf("s2 is on; dir = %g,%g\n",data.dir.x,data.dir.y);
-		s2.become_on(&s1, normal); //TODO double onness??
-		new_c2 = 0;
-	}
-
 	real_t delta_c1 = new_c1 - c1;
 	/* solids' velocities should adjust AWAY from each other */
 	if (delta_c1 > 0)
-		delta_c1 = -delta_c1;
+		//delta_c1 = -delta_c1;
+		delta_c1 = 0;
 	real_t delta_c2 = new_c2 - c2;
 	if (delta_c2 < 0)
-		delta_c2 = -delta_c2;
+		delta_c2 = 0;
+		//delta_c2 = -delta_c2;
 	para_c1 = data.dir * (c1 + delta_c1);
 	para_c2 = data.dir * (c2 + delta_c2);
 
@@ -560,6 +522,23 @@ void resolve_collision(solid& s1, solid& s2, struct collision_data& data) {
 		s2.velocity = para_c2 + perp_c2;
 		//printf("v2,2 = %g,%g\n",s2.velocity.x,s2.velocity.y);
 	}
+
+	/* adjust positions so there is no collision */
+	real_t move1_ratio;
+	if (immobile1) {
+		move1_ratio = 0;
+	} else if (immobile2) {
+		move1_ratio = 1;
+	} else {
+		move1_ratio = s2.mass / (s1.mass + s2.mass);
+	}
+	vector2d_t dp;
+	dp = data.dir * (-move1_ratio * data.overlap);
+	s1.x += dp.x;
+	s1.y += dp.y;
+	dp = data.dir * ((1 - move1_ratio) * data.overlap);
+	s2.x += dp.x;
+	s2.y += dp.y;
 }
 
 /* requires s non-null */

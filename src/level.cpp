@@ -57,6 +57,7 @@ int run_level (level_func level_init) {
 		guy->choose_action(walls, dt); //TODO everyone should do this
 
 		//TODO move this somewhere better?
+		//TODO forget this collided thing
 #define CHECK_COLLISION(s1,s2,mi1,mi2) do {\
 	struct collision_data data;\
 	if (solids_collide(s1, s2, &data)) {\
@@ -87,16 +88,6 @@ int run_level (level_func level_init) {
 						i, j);
 			}
 
-			if (moves->at(i).collided) {
-				/*
-				printf("collision! reverting %g,%g to %g,%g\n",
-				moves->at(i).m->s->x,moves->at(i).m->s->y,
-				moves->at(i).old_x,moves->at(i).old_y);
-				*/
-				moves->at(i).m->x = moves->at(i).old_x;
-				moves->at(i).m->y = moves->at(i).old_y;
-				moves->at(i).collided = false;
-			}
 		}
 
 		for (i = 0; i < moves->size(); i++) {
