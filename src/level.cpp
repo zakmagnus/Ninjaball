@@ -9,6 +9,7 @@ int WORLD_TOP_LIMIT;
 int WORLD_BOT_LIMIT;
 int WORLD_LEFT_LIMIT;
 int WORLD_RIGHT_LIMIT;
+int num_vics;
 level_func level_funcs[NB_NUM_LEVELS];
 
 //TODO where should globals go? it's confusing, sort em out
@@ -105,7 +106,7 @@ int run_level (level_func level_init) {
 			dead();
 		} else if (guy->y < -WORLD_TOP_LIMIT) {
 			dead();
-		} else if (guy->won) {
+		} else if (guy->points >= num_vics) {
 			success();
 		}
 		update_camera();
@@ -139,6 +140,7 @@ void test_level (void); //XXX debug
 void init_level_funcs (void) {
 	level_funcs[0] = load_tutorial;
 	level_funcs[1] = load_level_one;
+	level_funcs[2] = load_level_two;
 
 	//level_funcs[0] = test_level;
 }
@@ -157,22 +159,92 @@ real_t hex_points[] = {0, 0, 40, 0, 50, -20,
 real_t anchor[] = {0, 0, 15, -40, -15, -40};
 real_t spike_pts[] = {0, 0, 30, -20, 0, -40};
 real_t unstick_pts[] = {0, 0, 50, 0, -100, -100, -150, -100};
+real_t unstick_rev_pts[] = {0, 0, 50, 0, 150, -150, 100, -150};
 real_t upright_tri[] = {0, 0, 100, 0, 0, -100};
 real_t rev_upright_tri[] = {0, 0, 100, 0, 100, -100};
 real_t small_rect[] = {0, 0, 250, 0, 250, -40, 0, -40};
-real_t med_wall[] = {0, 0, 240, 0, 240, -40, 0, -40};
-real_t med_wall_thin[] = {0, 0, 200, 0, 200, -20, 0, -20};
-real_t med_wall_thin2[] = {0, 0, 240, 0, 240, -20, 0, -20};
+real_t med_wall[] = {0, 0, 300, 0, 300, -40, 0, -40};
+real_t med_wall_thin[] = {0, 0, 260, 0, 260, -20, 0, -20};
+real_t med_wall_thin2[] = {0, 0, 300, 0, 300, -20, 0, -20};
 real_t med_wall_up[] = {0, 0, 40, 0, 40, -220, 0, -220};
 real_t med_wall_up_thin[] = {0, 0, 20, 0, 20, -170, 0, -170};
+real_t tall_wall[] = {0, 0, 20, 0, 20, -700, 0, -700};
+real_t floor_pts[] = {0, 0, 1740, 0, 1740, -20, 0, -20};
+real_t big_tri[] = {0, 0, 150, -250, -200, -250};
+real_t med_sq[] = {0, 0, 40, 0, 40, -40, 0, -40};
+real_t ceiling_chunk[] = {0, 0, 500, 0, 515, -15, 515, -45, 500, -60, 0, -60,
+	-15, -45, -15, -15};
+real_t upright_slopy[] = {0, 0, 60, 0, 90, -300, 0, -230};
+real_t encloser[] = {0, 0, -60, -70, -60, -240, 20, -240, 35, 0};
 
-void test_level (void) {
-	WORLD_TOP_LIMIT = 500;
-	WORLD_BOT_LIMIT = 500;
+void load_level_one (void) {
+	WORLD_TOP_LIMIT = 1000;
+	WORLD_BOT_LIMIT = 100;
 	WORLD_LEFT_LIMIT = 500;
-	WORLD_RIGHT_LIMIT = 500;
+	WORLD_RIGHT_LIMIT = 2200;
 
-	walls->push_back(new_poly(NULL, true, wall1_pts, 4, GUY_INIT_X, GUY_INIT_Y+590));
+	solid *sbuf = new_poly(NULL, true, tall_wall, 4, GUY_INIT_X - 100,
+			GUY_INIT_Y + 60, 1, 0x00ff00ff);
+	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
+	walls->push_back(sbuf);
+
+	walls->push_back(new_poly(NULL, true, floor_pts, 4, GUY_INIT_X - 100,
+				GUY_INIT_Y + 80));
+	walls->push_back(new_poly(NULL, true, med_wall_up, 4, GUY_INIT_X + 400,
+				GUY_INIT_Y + 40));
+	walls->push_back(new_poly(NULL, true, med_wall_up, 4, GUY_INIT_X + 550,
+				GUY_INIT_Y + 40));
+	walls->push_back(new_poly(NULL, true, big_tri, 3, GUY_INIT_X + 490,
+				GUY_INIT_Y - 120));
+
+	walls->push_back(new_poly(NULL, true, ceiling_chunk, 8, GUY_INIT_X - 80,
+				GUY_INIT_Y - 700));
+	walls->push_back(new_poly(NULL, true, ceiling_chunk, 8, GUY_INIT_X + 515,
+				GUY_INIT_Y - 700));
+	walls->push_back(new_poly(NULL, true, ceiling_chunk, 8, GUY_INIT_X + 1110,
+				GUY_INIT_Y - 700));
+
+	walls->push_back(new_poly(NULL, true, tall_wall, 4, GUY_INIT_X + 1620,
+			GUY_INIT_Y + 60));
+
+	sbuf = new_poly(NULL, true, med_sq, 4, GUY_INIT_X + 785,
+			GUY_INIT_Y - 240, 1, 0x00ff00ff);
+	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
+	walls->push_back(sbuf);
+
+	walls->push_back(new_poly(NULL, true, med_wall_up, 4, GUY_INIT_X + 1000,
+				GUY_INIT_Y + 60));
+	walls->push_back(new_poly(NULL, true, med_wall_up, 4, GUY_INIT_X + 1250,
+				GUY_INIT_Y + 60));
+	walls->push_back(new_poly(NULL, true, upright_slopy, 4, GUY_INIT_X + 1000,
+				GUY_INIT_Y - 180));
+	walls->push_back(new_poly(NULL, true, encloser, 5, GUY_INIT_X + 1250,
+				GUY_INIT_Y - 240));
+
+	sbuf = new_poly(NULL, true, anchor, 3, GUY_INIT_X + 1155,
+			GUY_INIT_Y, 1, 0xFFff00ff);
+	put_solid_prop(NB_VICTORY, sbuf->props);
+	walls->push_back(sbuf);
+
+	sbuf = new_poly(NULL, true, anchor, 3, GUY_INIT_X + 700,
+			GUY_INIT_Y - 800, 1, 0xFFff00ff);
+	put_solid_prop(NB_VICTORY, sbuf->props);
+	walls->push_back(sbuf);
+
+	sbuf = new_poly(NULL, true, anchor, 3, GUY_INIT_X + 900,
+			GUY_INIT_Y + 300, 1, 0xFFff00ff);
+	put_solid_prop(NB_VICTORY, sbuf->props);
+	walls->push_back(sbuf);
+
+	num_vics = 3;
+
+	SDL_WM_SetCaption("Ninjaball level 1", NULL);
+
+	/*
+	guy_pos_override = true;
+	guy_override_x = 1000;
+	guy_override_y = GUY_INIT_Y - 400;
+	*/
 }
 
 void load_tutorial (void) {
@@ -228,12 +300,14 @@ void load_tutorial (void) {
 	put_solid_prop(NB_VICTORY, sbuf->props);
 	walls->push_back(sbuf);
 
+	num_vics = 1;
+
 	SDL_WM_SetCaption("Ninjaball intro level", NULL);
 
 	guy_pos_override = false;
 }
 
-void load_level_one (void) {
+void load_level_two (void) {
 	WORLD_TOP_LIMIT = 5000;
 	WORLD_BOT_LIMIT = 0;
 	WORLD_LEFT_LIMIT = 800;
@@ -300,18 +374,18 @@ void load_level_one (void) {
 	walls->push_back(new_poly(NULL, true, anchor, 3, GUY_INIT_X + 20,
 				GUY_INIT_Y - 1600));
 
-	sbuf = new_poly(NULL, true, med_wall, 4, GUY_INIT_X - 240,
+	sbuf = new_poly(NULL, true, med_wall, 4, GUY_INIT_X - 300,
 			GUY_INIT_Y - 1000, 1, 0x00ff00ff);
 	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
 	walls->push_back(sbuf);
 
-	sbuf = new_poly(NULL, true, med_wall_thin2, 4, GUY_INIT_X - 270,
+	sbuf = new_poly(NULL, true, med_wall_thin2, 4, GUY_INIT_X - 310,
 			GUY_INIT_Y - 970, 1, 0xFF0000ff);
 	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
 	put_solid_prop(NB_DEADLY, sbuf->props);
 	walls->push_back(sbuf);
 
-	sbuf = new_poly(NULL, true, med_wall_thin2, 4, GUY_INIT_X - 230,
+	sbuf = new_poly(NULL, true, med_wall_thin2, 4, GUY_INIT_X - 215,
 			GUY_INIT_Y - 740, 1, 0xFF0000ff);
 	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
 	put_solid_prop(NB_DEADLY, sbuf->props);
@@ -323,7 +397,17 @@ void load_level_one (void) {
 	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
 	walls->push_back(sbuf);
 
-	sbuf = new_poly(NULL, true, med_wall_thin, 4, GUY_INIT_X - 440,
+	sbuf = new_poly(NULL, true, med_wall_up, 4, GUY_INIT_X - 470,
+			GUY_INIT_Y - 600, 1, 0x00ff00ff);
+	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
+	walls->push_back(sbuf);
+
+	sbuf = new_poly(NULL, true, unstick_rev_pts, 4, GUY_INIT_X - 470,
+			GUY_INIT_Y - 850, 1, 0x00ff00ff);
+	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
+	walls->push_back(sbuf);
+
+	sbuf = new_poly(NULL, true, med_wall_thin, 4, GUY_INIT_X - 500,
 			GUY_INIT_Y - 549, 1, 0xFF0000ff);
 	put_solid_prop(NB_DEADLY, sbuf->props);
 	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
@@ -337,11 +421,25 @@ void load_level_one (void) {
 	walls->push_back(new_poly(NULL, true, rev_upright_tri, 3, GUY_INIT_X - 21,
 				GUY_INIT_Y - 775));
 
-	SDL_WM_SetCaption("Ninjaball level 1", NULL);
+	num_vics = 1;
 
+	SDL_WM_SetCaption("Ninjaball level 2", NULL);
+
+	guy_pos_override = false;
 	/*
 	guy_pos_override = true;
 	guy_override_x = 500;
 	guy_override_y = GUY_INIT_Y - 1200;
 	*/
+}
+
+void test_level (void) {
+	WORLD_TOP_LIMIT = 500;
+	WORLD_BOT_LIMIT = 500;
+	WORLD_LEFT_LIMIT = 500;
+	WORLD_RIGHT_LIMIT = 500;
+
+	walls->push_back(new_poly(NULL, true, wall1_pts, 4, GUY_INIT_X, GUY_INIT_Y+590));
+
+	num_vics = 1;
 }

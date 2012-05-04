@@ -24,7 +24,7 @@ player::player() : Moveable() {
 	this->rope = new ropedata[1];
 	this->a_on = this->d_on = this->q_on = this->e_on = false;
 	this->alive = true;
-	this->won = false;
+	this->points = 0;
 
 	put_solid_prop(NB_PLAYER, this->props);
 	this->collision_callback_func = player_collided;
@@ -37,9 +37,9 @@ void player_collided(solid *p, solid& other, real_t para_vel) {
 	}
 	bool win = (bool) get_solid_prop(NB_VICTORY, other.props);
 	if (win) {
-		((player *)p)->won = true;
+		((player *)p)->points++;
+		other.visible_data = (void *) 0x1111FFff;
 	}
-	//TODO this needs to know about collision-component velocity
 	if (fabs(para_vel) >= 50)
 		Mix_PlayChannel(2, soft_bump, 0);
 }
