@@ -3,6 +3,7 @@
 #include "SDL/SDL_gfxPrimitives.h"
 #include "player.hpp"
 #include "vector.hpp"
+#include "level_utils.hpp"
 
 #define MOVERATE (200)
 #define NB_ROPE_EXTEND_RATE (175)
@@ -38,6 +39,8 @@ void player_collided(solid *p, solid& other) {
 	if (win) {
 		((player *)p)->won = true;
 	}
+	if (p->velocity.norm() >= 10)
+		Mix_PlayChannel(2, soft_bump, 0);
 }
 
 //TODO some sort of "getkeystate()" might be better
@@ -147,9 +150,13 @@ void player::choose_action(vector<solid *> *walls, real_t dt) {
 					this->hook_flying = false;
 					if (!get_solid_prop(NB_UNSTICKABLE,
 								walls->at(i)->props)) {
+						Mix_PlayChannel(1, hook_hit, 0);
 						this->rope->x2 = cx;
 						this->rope->y2 = cy;
 						this->attach_rope();
+					}
+					else {
+						Mix_PlayChannel(1, hook_clank, 0);
 					}
 					break;
 				}
@@ -180,6 +187,7 @@ void player::mouse_at(int mx, int my, char button) {
 		if (!(rope_attached || hook_flying)) {
 			hook_flying = true;
 			flyhook->init(this, this->pointer_dir);
+			Mix_PlayChannel(0, hook_shot, 0);
 		}
 	}
 	else {

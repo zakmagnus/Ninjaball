@@ -1,3 +1,4 @@
+#include "SDL/SDL_audio.h"
 #include "level.hpp"
 #include "level_utils.hpp"
 

@@ -2,6 +2,7 @@
 #include "level.hpp"
 #include "SDL/SDL_image.h"
 #include "SDL/SDL_ttf.h"
+#include "SDL/SDL_mixer.h"
 #include "ui.hpp"
 
 real_t frame_air_drag = pow(AIR_FRICTION, 1.0 / FRAMES_PER_SEC);
@@ -9,6 +10,7 @@ real_t frame_air_drag = pow(AIR_FRICTION, 1.0 / FRAMES_PER_SEC);
 vector2d_t gravity = downvec * 150;
 
 SDL_Surface *screen, *img1, *img2, *img3;
+Mix_Chunk *bump, *soft_bump, *hook_shot, *hook_hit, *hook_clank;
 TTF_Font *font;
 SDL_Rect camera;
 vector<solid *> *walls;
@@ -133,6 +135,25 @@ int init_stuff (void) {
 		return -1;
 	}
 
+	if (Mix_Init(0)) {
+		printf("could not init audio\n");
+		return -1;
+	}
+
+	if (Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 2,
+				1024)) {
+		printf("could not init audio\n");
+		return -1;
+	}
+
+	bump = Mix_LoadWAV("../audio/wallhit.wav");
+	soft_bump = Mix_LoadWAV("../audio/wallhitsoft.wav");
+	hook_shot = Mix_LoadWAV("../audio/grappleshoot.wav");
+	hook_hit = Mix_LoadWAV("../audio/hookhit.wav");
+	hook_clank = Mix_LoadWAV("../audio/hookbounce.wav");
+
+	Mix_AllocateChannels(3);
+
 	init_coll_funcs();
 
 	return 0;
@@ -142,5 +163,12 @@ void teardown_stuff (void) {
 	SDL_FreeSurface(img1);
 	SDL_FreeSurface(img2);
 	SDL_FreeSurface(img3);
+	Mix_FreeChunk(bump);
+	Mix_FreeChunk(soft_bump);
+	Mix_FreeChunk(hook_shot);
+	Mix_FreeChunk(hook_hit);
+	Mix_FreeChunk(hook_clank);
+	Mix_CloseAudio();
+	Mix_Quit();
 }
 

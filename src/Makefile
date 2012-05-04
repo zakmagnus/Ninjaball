@@ -1,5 +1,5 @@
 CC=g++
-LFLAGS=-lSDL -lSDL_image -lSDL_gfx -lSDL_ttf
+LFLAGS=-lSDL -lSDL_image -lSDL_gfx -lSDL_ttf -lSDL_mixer
 CFLAGS=$(LFLAGS)
 SRCS=level.cpp level_utils.cpp ui.cpp vector.cpp solid.cpp physics.cpp Moveable.cpp player.cpp visible.cpp
 OBJS=$(SRCS:.cpp=.o)

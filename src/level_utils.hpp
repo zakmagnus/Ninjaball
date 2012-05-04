@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <vector>
+#include "SDL/SDL_mixer.h"
 #include "player.hpp"
 #include "Moveable.hpp"
 #include "solid.hpp"
@@ -44,6 +45,7 @@ struct moveable_data {
 };
 
 extern SDL_Surface *screen, *img1, *img2, *img3;
+extern Mix_Chunk *bump, *soft_bump, *hook_shot, *hook_hit, *hook_clank;
 extern SDL_Rect camera;
 extern vector<solid *> *walls;
 extern vector<moveable_data> *moves;
