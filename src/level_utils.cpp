@@ -135,26 +135,6 @@ int init_stuff (void) {
 		return -1;
 	}
 
-	if (Mix_Init(0)) {
-		printf("could not init audio\n");
-		return -1;
-	}
-
-	if (Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 2,
-				1024)) {
-		printf("could not init audio\n");
-		return -1;
-	}
-
-	bump = Mix_LoadWAV("../audio/wallhit.wav");
-	soft_bump = Mix_LoadWAV("../audio/wallhitsoft.wav");
-	hook_shot = Mix_LoadWAV("../audio/grappleshoot.wav");
-	hook_hit = Mix_LoadWAV("../audio/hookhit.wav");
-	hook_clank = Mix_LoadWAV("../audio/hookbounce.wav");
-
-	Mix_AllocateChannels(3);
-
-	init_coll_funcs();
 
 	return 0;
 }
@@ -163,12 +143,5 @@ void teardown_stuff (void) {
 	SDL_FreeSurface(img1);
 	SDL_FreeSurface(img2);
 	SDL_FreeSurface(img3);
-	Mix_FreeChunk(bump);
-	Mix_FreeChunk(soft_bump);
-	Mix_FreeChunk(hook_shot);
-	Mix_FreeChunk(hook_hit);
-	Mix_FreeChunk(hook_clank);
-	Mix_CloseAudio();
-	Mix_Quit();
 }
 
