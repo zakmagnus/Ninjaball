@@ -44,7 +44,8 @@ void remove_solid_prop(solid_prop_id prop, solid_props_t& src);
 class solid : public visible, public physics_t {
 	protected:
 		unsigned solid_type;
-		void (*collision_callback_func)(solid *collidee, solid& collider);
+		void (*collision_callback_func)(solid *collidee, solid& collider,
+				real_t para_vel);
 		void apply_normal_forces(void);
 	public:
 		struct onbase_data {
@@ -74,7 +75,7 @@ class solid : public visible, public physics_t {
 		list<onbase_data>::iterator
 			stop_being_on(list<onbase_data>::iterator I);
 		virtual void verify_onbases(void);
-		void collision_callback(solid& s);
+		void collision_callback(solid& s, real_t para_vel);
 
 		friend solid *new_ball(solid *buf, bool immobile, real_t x, real_t y, real_t r,
 				SDL_Surface *img, real_t e);

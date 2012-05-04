@@ -31,9 +31,9 @@ solid::solid(real_t x, real_t y, real_t e, bool immobile, mass_t mass)
 	init_solid_props(this->props);
 }
 
-void solid::collision_callback(solid& s) {
+void solid::collision_callback(solid& s, real_t para_vel) {
 	if (this->collision_callback_func)
-		this->collision_callback_func(this, s);
+		this->collision_callback_func(this, s, para_vel);
 }
 
 void init_solid_props(solid_props_t& props) {
@@ -456,10 +456,6 @@ void resolve_collision(solid& s1, solid& s2, struct collision_data& data) {
 	assert(norm_d > 0.0);
 	data.dir = data.dir / norm_d;
 
-	//TODO when should this happen? what if these adjust velocities?
-	s1.collision_callback(s2);
-	s2.collision_callback(s1);
-
 	vector2d_t& v1 = s1.velocity;
 	c1 = 0.0;
 	if (v1.x != 0 || v1.y != 0)
@@ -468,6 +464,10 @@ void resolve_collision(solid& s1, solid& s2, struct collision_data& data) {
 	c2 = 0.0;
 	if (v2.x != 1 || v1.y != 0)
 		c2 = v2.dot(data.dir);
+
+	//TODO when should this happen? what if these adjust velocities?
+	s1.collision_callback(s2, c1);
+	s2.collision_callback(s1, c2);
 
 	bool immobile1 = s1.immobile;
 	bool immobile2 = s2.immobile;

@@ -56,6 +56,6 @@ class player : public Moveable {
 		bool won;
 };
 
-void player_collided(solid *player, solid& other);
+void player_collided(solid *player, solid& other, real_t para_vel);
 
 #endif

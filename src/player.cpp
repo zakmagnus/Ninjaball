@@ -30,7 +30,7 @@ player::player() : Moveable() {
 	this->collision_callback_func = player_collided;
 }
 
-void player_collided(solid *p, solid& other) {
+void player_collided(solid *p, solid& other, real_t para_vel) {
 	bool deadly = (bool) get_solid_prop(NB_DEADLY, other.props);
 	if (deadly) {
 		((player *)p)->alive = false;
@@ -39,7 +39,8 @@ void player_collided(solid *p, solid& other) {
 	if (win) {
 		((player *)p)->won = true;
 	}
-	if (p->velocity.norm() >= 10)
+	//TODO this needs to know about collision-component velocity
+	if (fabs(para_vel) >= 50)
 		Mix_PlayChannel(2, soft_bump, 0);
 }
 
