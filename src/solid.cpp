@@ -662,7 +662,8 @@ solid *new_poly(solid *buf, bool immobile, real_t x, real_t y, real_t e, int num
 }
 
 //TODO get source point, to find NEAREST intersection
-bool seg_poly_intersection(solid *p, segment *s, real_t& cx, real_t& cy) {
+bool seg_poly_intersection(solid *p, segment *s, real_t& cx, real_t& cy,
+		real_t sx, real_t sy) {
 	assert(p->get_solid_type() == NB_SLD_POLY);
 
 	real_t ax1, ay1, adx, ady;
@@ -671,6 +672,8 @@ bool seg_poly_intersection(solid *p, segment *s, real_t& cx, real_t& cy) {
 	adx = s->dir.x;
 	ady = s->dir.y;
 	int i;
+	real_t min_d = -1;
+	real_t min_cx, min_cy;
 	for (i = 0; i < p->solid_data->poly_data.num_segs; i++) {
 		segment *pseg = p->solid_data->poly_data.segs[i];
 		real_t bx1, by1, bdx, bdy;
@@ -691,8 +694,19 @@ bool seg_poly_intersection(solid *p, segment *s, real_t& cx, real_t& cy) {
 		if (between_ord(0, at, 1) && between_ord(0, bt, 1)) {
 			cx = ax1 + bt * adx;
 			cy = ay1 + bt * ady;
-			return true;
+			real_t d = (cx - sx) * (cx - sx) + (cy - sy) * (cy - sy);
+			if (min_d < 0 || d < min_d) {
+				min_d = d;
+				min_cx = cx;
+				min_cy = cy;
+			}
 		}
+	}
+
+	if (min_d >= 0) {
+		cx = min_cx;
+		cy = min_cy;
+		return true;
 	}
 	return false;
 }

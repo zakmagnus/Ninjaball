@@ -39,6 +39,7 @@ class player : public Moveable {
 		void attach_rope(void);
 		void remove_rope(void);
 		bool rope_attached;
+		SDL_Surface *img_flipped, *img_orig;
 
 		bool a_on, d_on, q_on, e_on;
 

@@ -1,6 +1,7 @@
 #include <math.h>
 #include <vector>
 #include "SDL/SDL_gfxPrimitives.h"
+#include "SDL/SDL_rotozoom.h"
 #include "player.hpp"
 #include "vector.hpp"
 #include "level_utils.hpp"
@@ -25,6 +26,7 @@ player::player() : Moveable() {
 	this->a_on = this->d_on = this->q_on = this->e_on = false;
 	this->alive = true;
 	this->points = 0;
+	this->img_flipped = this->img_orig = NULL;
 
 	put_solid_prop(NB_PLAYER, this->props);
 	this->collision_callback_func = player_collided;
@@ -46,6 +48,11 @@ void player_collided(solid *p, solid& other, real_t para_vel) {
 
 //TODO some sort of "getkeystate()" might be better
 void player::handle_input(SDL_Event& event, real_t dt) {
+	if (!this->img_flipped) {
+		this->img_flipped = zoomSurface((SDL_Surface *)
+				this->visible_data, -1, 1, 0);
+		this->img_orig = (SDL_Surface *) this->visible_data;
+	}
 	if (event.type == SDL_KEYDOWN) {
 		switch (event.key.keysym.sym) {
 			case SDLK_w: 
@@ -63,11 +70,13 @@ void player::handle_input(SDL_Event& event, real_t dt) {
 			case SDLK_LEFT:
 				this->a_on = true;
 				//this->total_force += leftforce;
+				this->visible_data = this->img_flipped;
 				break;
 			case SDLK_d: 
 			case SDLK_RIGHT:
 				this->d_on = true;
 				//total_force += rightforce;
+				this->visible_data = this->img_orig;
 				break;
 		}
 	}
@@ -146,7 +155,8 @@ void player::choose_action(vector<solid *> *walls, real_t dt) {
 			if (walls->at(i)->get_solid_type() == NB_SLD_POLY) {
 				real_t cx, cy;
 				bool hit = seg_poly_intersection(walls->at(i),
-						flyhook, cx, cy);
+						flyhook, cx, cy, this->x,
+						this->y);
 				if (hit) {
 					this->hook_flying = false;
 					if (!get_solid_prop(NB_UNSTICKABLE,
@@ -177,6 +187,7 @@ void player::choose_action(vector<solid *> *walls, real_t dt) {
 			*/
 		}
 	}
+
 }
 
 void player::mouse_at(int mx, int my, char button) {

@@ -159,5 +159,6 @@ solid *new_poly(solid *buf, bool immobile, real_t x, real_t y, real_t e,
 
 //TODO move this
 
-bool seg_poly_intersection(solid *p, segment *s, real_t& cx, real_t& cy);
+bool seg_poly_intersection(solid *p, segment *s, real_t& cx, real_t& cy,
+		real_t sx, real_t sy);
 #endif
