@@ -39,6 +39,8 @@ void player_collided(solid *p, solid& other, real_t para_vel) {
 	}
 	bool win = (bool) get_solid_prop(NB_VICTORY, other.props);
 	if (win) {
+		if (other.visible_data != (void *)0xFFff00ff) //XXX ugh
+			return;
 		((player *)p)->points++;
 		other.visible_data = (void *) 0x1111FFff;
 	}

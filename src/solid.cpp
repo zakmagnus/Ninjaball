@@ -377,7 +377,7 @@ list<solid::onbase_data>::iterator solid::become_on(solid *onbase,
 	data.onbase = onbase;
 	data.normal = normal;
 	this->onbases->push_front(data);
-	printf("a solid is now on, with normal %g,%g\n",normal.x,normal.y);
+	//printf("a solid is now on, with normal %g,%g\n",normal.x,normal.y);
 
 	onbase->become_onbase(this, normal, this->onbases->begin());
 

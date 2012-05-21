@@ -96,8 +96,9 @@ int run_level (level_func level_init) {
 			moves->at(i).m->verify_onbases();
 		}
 
-		if (!guy->alive)
+		if (!guy->alive) {
 			dead();
+		}
 		if (guy->x > SCREEN_WIDTH + WORLD_RIGHT_LIMIT) {
 			dead();
 		} else if (guy->x < -WORLD_LEFT_LIMIT) {
@@ -137,8 +138,10 @@ int run_level (level_func level_init) {
 }
 
 void test_level (void); //XXX debug
+void test_level2 (void); //XXX debug
 void init_level_funcs (void) {
 	level_funcs[0] = load_tutorial;
+	//level_funcs[0] = test_level2;
 	level_funcs[1] = load_level_one;
 	level_funcs[2] = load_level_two;
 
@@ -176,7 +179,54 @@ real_t ceiling_chunk[] = {0, 0, 500, 0, 515, -15, 515, -45, 500, -60, 0, -60,
 	-15, -45, -15, -15};
 real_t upright_slopy[] = {0, 0, 60, 0, 90, -300, 0, -230};
 real_t encloser[] = {0, 0, -60, -70, -60, -240, 20, -240, 35, 0};
+real_t spikepit[] = {0, 0, 500, 0, 500, -10, 0, -10};
 
+void test_level2 (void) {
+	//TODO unfinished :^(
+	WORLD_TOP_LIMIT = 1000;
+	WORLD_BOT_LIMIT = 700;
+	WORLD_LEFT_LIMIT = 50;
+	WORLD_RIGHT_LIMIT = 2200;
+
+	walls->push_back(new_poly(NULL, true, tall_wall, 4, GUY_INIT_X,
+				GUY_INIT_Y + 1000));
+	solid *sbuf = new_poly(NULL, true, tall_wall, 4, GUY_INIT_X + 200,
+			GUY_INIT_Y + 800, 1, 0x00ff00ff);
+	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
+	walls->push_back(sbuf);
+	walls->push_back(new_poly(NULL, true, anchor, 3, GUY_INIT_X + 210,
+				GUY_INIT_Y + 845));
+	sbuf = new_poly(NULL, true, tall_wall, 4, GUY_INIT_X + 450,
+			GUY_INIT_Y + 1400, 1, 0x00ff00ff);
+	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
+	walls->push_back(sbuf);
+	walls->push_back(new_poly(NULL, true, wall2_pts, 4, GUY_INIT_X + 470,
+				GUY_INIT_Y + 800));
+	sbuf = new_poly(NULL, true, wall2_pts, 4, GUY_INIT_X + 470,
+			GUY_INIT_Y + 600, 1, 0x00ff00ff);
+	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
+	walls->push_back(sbuf);
+
+	sbuf = new_poly(NULL, true, spikepit, 4, GUY_INIT_X + 980,
+			GUY_INIT_Y + 735, 1, 0xFF0000ff);
+	put_solid_prop(NB_DEADLY, sbuf->props);
+	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
+	walls->push_back(sbuf);
+	sbuf = new_poly(NULL, true, spikepit, 4, GUY_INIT_X + 980,
+			GUY_INIT_Y + 590, 1, 0xFF0000ff);
+	put_solid_prop(NB_UNSTICKABLE, sbuf->props);
+	put_solid_prop(NB_DEADLY, sbuf->props);
+	walls->push_back(sbuf);
+
+	walls->push_back(new_poly(NULL, true, tall_wall, 4, GUY_INIT_X + 1700,
+				GUY_INIT_Y + 800));
+
+	num_vics = 1;
+
+	guy_pos_override = true;
+	guy_override_x = 600;
+	guy_override_y = GUY_INIT_Y + 300;
+}
 void load_level_one (void) {
 	WORLD_TOP_LIMIT = 1000;
 	WORLD_BOT_LIMIT = 100;
