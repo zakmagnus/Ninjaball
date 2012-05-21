@@ -1,0 +1,20 @@
+Ninjaball
+by ZAK Magnus
+with help from David Lu
+
+This is meant to run on Linux. If you can make it run (or even build)
+elsewhere, cool. Can you tell me how?
+
+To build, cd into src/ and run make. You need to have these libraries:
+
+libsdl
+libsdl-ttf
+libsdl-mixer
+libsdl-image
+libsdl-gfx
+
+I don't know that this list is exhaustive, nor that it's minimal. These
+are the relevant-looking ones I have installed on the machine I develop
+on.
+
+Once make runs successfully, launch the game with ./ninjaball.
